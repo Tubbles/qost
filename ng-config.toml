@@ -1,0 +1,35 @@
+[profiles.debug]
+cflags = [
+    "--std=c17",
+    "-Wall",
+    "-Wextra",
+    "-pedantic",
+    "-D_FORTIFY_SOURCE=2",
+    "-D_GLIBCXX_ASSERTIONS",
+    "-Og",
+    "-g",
+    "-fsanitize=address",
+    "-fsanitize=undefined",
+]
+cxxflags = ["--std=c++20"]
+ldflags = ["-fsanitize=address", "-fsanitize=undefined"]
+
+[profiles.release]
+cflags = [
+    "--std=c17",
+    "-Wall",
+    "-Wextra",
+    "-pedantic",
+    "-D_FORTIFY_SOURCE=2",
+    "-D_GLIBCXX_ASSERTIONS",
+    "-O3",
+    "-flto",
+]
+cxxflags = ["--std=c++20"]
+ldflags = ["-flto"]
+
+[binaries."quest-on-saer-tor"]
+dependencies = [
+    "src/main.c",
+    # "src/lib.c",
+]

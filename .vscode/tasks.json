@@ -1,0 +1,71 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build debug",
+            "type": "shell",
+            "command": "./build.sh",
+            "args": [],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "presentation": {
+                // Reveal the output only if unrecognized errors occur.
+                "reveal": "silent"
+            },
+            "problemMatcher": "$gcc",
+        },
+        {
+            "label": "build debug pristine",
+            "type": "shell",
+            "command": "./build.sh",
+            "args": [
+                "p"
+            ],
+            "group": {
+                "kind": "build",
+            },
+            "presentation": {
+                // Reveal the output only if unrecognized errors occur.
+                "reveal": "silent"
+            },
+            "problemMatcher": "$gcc",
+        },
+        {
+            "label": "build release",
+            "type": "shell",
+            "command": "./build.sh",
+            "args": [
+                "r"
+            ],
+            "group": {
+                "kind": "build",
+            },
+            "presentation": {
+                // Reveal the output only if unrecognized errors occur.
+                "reveal": "silent"
+            },
+            "problemMatcher": "$gcc",
+        },
+        {
+            "label": "build release pristine",
+            "type": "shell",
+            "command": "./build.sh",
+            "args": [
+                "r",
+                "p"
+            ],
+            "group": {
+                "kind": "build",
+            },
+            "presentation": {
+                // Reveal the output only if unrecognized errors occur.
+                "reveal": "silent"
+            },
+            "problemMatcher": "$gcc",
+        },
+    ]
+}

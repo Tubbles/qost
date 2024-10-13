@@ -1,3 +1,4 @@
 __pycache__/
 .docker-home
-build
+output
+log
