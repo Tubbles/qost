@@ -1,5 +1,8 @@
 [genvar]
+wren = "{root}/src/modules/wren"
 common_compile_flags = [
+    "-fdiagnostics-color=always",
+
     "-Wall",
     "-Wextra",
     "-Wshadow",
@@ -17,8 +20,11 @@ common_compile_flags = [
     "-Wdouble-promotion",
     "-Wformat=2",
     "-Wimplicit-fallthrough",
+
     "-D_FORTIFY_SOURCE=2",
     "-D_GLIBCXX_ASSERTIONS",
+
+    "-I {wren}/src/include",
 ]
 common_c_flags = ["-xc", "--std=c17", "{common_compile_flags}"]
 common_cxx_flags = [
@@ -28,6 +34,13 @@ common_cxx_flags = [
     "-Wnon-virtual-dtor",
     "-Wold-style-cast",
     "-Woverloaded-virtual",
+]
+common_ld_flags = [
+    "-fdiagnostics-color=always",
+
+    "-L {wren}/lib",
+    "-l:libwren.a",
+    #
 ]
 
 [profile.debug]
@@ -45,15 +58,16 @@ cxxflags = [
     "-fsanitize=address",
     "-fsanitize=undefined",
 ]
-ldflags = ["-fsanitize=address", "-fsanitize=undefined"]
+ldflags = ["{common_ld_flags}", "-fsanitize=address", "-fsanitize=undefined"]
 
 [profile.release]
 cflags = ["{common_c_flags}", "-s", "-O3", "-flto"]
 cxxflags = ["{common_cxx_flags}", "-s", "-O3", "-flto"]
-ldflags = ["-s", "-flto"]
+ldflags = ["{common_ld_flags}", "-s", "-flto"]
 
 [binary."quest-on-saer-tor"]
 dependencies = [
     "src/main.cc",
-    # "src/lib.c",
+    "src/modules/wren/lib/libwren.a",
+    #
 ]

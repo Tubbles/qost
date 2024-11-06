@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 
+my_dir="$(dirname "$(realpath "$0")")"
+
 step() {
     if [[ ${verbose} == true ]]; then
         (
@@ -11,4 +13,8 @@ step() {
     else
         "$@"
     fi
+}
+
+docker_step() {
+    step "${my_dir}/docker.sh" "$@"
 }

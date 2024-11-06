@@ -55,7 +55,7 @@ if __name__ == "__main__":
         settings_db = tomllib.load(f)
 
     # Read in settings on genvars
-    genvars = {}
+    genvars = {"root": f"{root}"}
     for genvar_key, genvar_value in settings_db["genvar"].items():
         var = genvar_value
         if type(var) == list:
@@ -92,6 +92,7 @@ if __name__ == "__main__":
     all_binaries = []
     for binary_key, binary_val in settings_db["binary"].items():
         all_binaries += [binary_key]
+        binary_deps = []
         ninja_db = {
             "builds": [],
         }
@@ -112,10 +113,11 @@ if __name__ == "__main__":
                         "output": f"obj/{file}.o",
                     }
                 )
+            elif os.path.splitext(file)[-1] in [".a"]:
+                binary_deps += [f"{root}/{file}"]
 
-        if args.verbose:
-            print(ninja_db["builds"])
-        nw.build(binary_key, "ld", [entry["output"] for entry in ninja_db["builds"]])
+        binary_deps += [entry["output"] for entry in ninja_db["builds"]]
+        nw.build(binary_key, "ld", binary_deps)
         for entry in ninja_db["builds"]:
             nw.build(entry["output"], entry["rule"], entry["input"])
 

@@ -4,3 +4,6 @@
 [submodule "src/modules/doctest"]
 	path = src/modules/doctest
 	url = https://github.com/doctest/doctest.git
+[submodule "src/modules/wren"]
+	path = src/modules/wren
+	url = https://github.com/wren-lang/wren.git

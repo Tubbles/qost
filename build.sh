@@ -93,8 +93,8 @@ if [[ ${verbose} == true ]]; then
 fi
 
 if [[ ${generate} == true ]]; then
-    step "${my_dir}/docker.sh" "${my_dir}/scripts/generate_ninja.py" "${ninja_gen_args[@]}"
-    step "${my_dir}/docker.sh" ninja -C "${build_dir}" -t compdb >"${build_dir}/compile_commands.json"
+    docker_step "${my_dir}/scripts/generate_ninja.py" "${ninja_gen_args[@]}"
+    docker_step ninja -C "${build_dir}" -t compdb >"${build_dir}/compile_commands.json"
 
     if [[ ${verbose} == true ]]; then
         cat "${build_dir}/build.ninja"
@@ -102,7 +102,7 @@ if [[ ${generate} == true ]]; then
 fi
 
 if [[ ${build} == true ]]; then
-    step "${my_dir}/docker.sh" ninja -C "${build_dir}" "${ninja_args[@]}" "${project}"
+    docker_step ninja -C "${build_dir}" "${ninja_args[@]}" "${project}"
 fi
 
 if [[ ${run} == true ]]; then

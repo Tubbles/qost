@@ -6,6 +6,7 @@ set -e
 all_modules=(
     "fmt"
     "doctest"
+    "wren"
 )
 
 usage="$0 [command...] [module...]
@@ -84,15 +85,31 @@ for module in "${selected_modules[@]}"; do
             fi
             mkdir -p build
             cd build
-            step "${my_dir}/docker.sh" cmake ..
-            step "${my_dir}/docker.sh" make -O -j
+            docker_step cmake ..
+            docker_step make -O -j
             if [[ ${test} == true ]]; then
-                step "${my_dir}/docker.sh" make test
+                docker_step make test
             fi
         )
     elif [[ "${module}" == "doctest" ]]; then
         (
             echo "doctest: nothing to build"
+        )
+    elif [[ "${module}" == "wren" ]]; then
+        (
+            cd "${modules_dir}/wren"
+            if [[ ${clean} == true ]]; then
+                :
+                # rm -fr "build"
+                docker_step make -C projects/make clean
+            fi
+            # mkdir -p build
+            # docker_step python3 "util/generate_amalgamation.py" >"build/wren.c"
+            docker_step make -C projects/make -O -j
+            if [[ ${test} == true ]]; then
+                :
+                # docker_step python3 "util/test.py"
+            fi
         )
     fi
 done
