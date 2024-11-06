@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# -*- coding: utf-8 -*-
+
+step() {
+    if [[ ${verbose} == true ]]; then
+        (
+            export verbose
+            set -x
+            "$@"
+        )
+    else
+        "$@"
+    fi
+}

@@ -1,0 +1,6 @@
+[submodule "src/modules/fmt"]
+	path = src/modules/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "src/modules/doctest"]
+	path = src/modules/doctest
+	url = https://github.com/doctest/doctest.git

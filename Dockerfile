@@ -12,6 +12,9 @@ RUN apt install -y \
 
 RUN pip install --break-system-packages ninja_syntax
 
+RUN apt install -y \
+    cmake
+
 # RUN rm -fr /var/lib/apt/lists/*
 
 # Passwordless sudo for all

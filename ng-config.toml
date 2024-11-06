@@ -1,35 +1,59 @@
-[profiles.debug]
-cflags = [
-    "--std=c17",
+[genvar]
+common_compile_flags = [
     "-Wall",
     "-Wextra",
+    "-Wshadow",
     "-pedantic",
+    "-Wcast-align",
+    "-Wunused",
+    "-Wconversion",
+    "-Wsign-conversion",
+    "-Wmisleading-indentation",
+    "-Wduplicated-cond",
+    "-Wduplicated-branches",
+    "-Wlogical-op",
+    "-Wnull-dereference",
+    "-Wuseless-cast",
+    "-Wdouble-promotion",
+    "-Wformat=2",
+    "-Wimplicit-fallthrough",
     "-D_FORTIFY_SOURCE=2",
     "-D_GLIBCXX_ASSERTIONS",
+]
+common_c_flags = ["-xc", "--std=c17", "{common_compile_flags}"]
+common_cxx_flags = [
+    "-xc++",
+    "--std=c++20",
+    "{common_compile_flags}",
+    "-Wnon-virtual-dtor",
+    "-Wold-style-cast",
+    "-Woverloaded-virtual",
+]
+
+[profile.debug]
+cflags = [
+    "{common_c_flags}",
     "-Og",
     "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
 ]
-cxxflags = ["--std=c++20"]
+cxxflags = [
+    "{common_cxx_flags}",
+    "-Og",
+    "-g",
+    "-fsanitize=address",
+    "-fsanitize=undefined",
+]
 ldflags = ["-fsanitize=address", "-fsanitize=undefined"]
 
-[profiles.release]
-cflags = [
-    "--std=c17",
-    "-Wall",
-    "-Wextra",
-    "-pedantic",
-    "-D_FORTIFY_SOURCE=2",
-    "-D_GLIBCXX_ASSERTIONS",
-    "-O3",
-    "-flto",
-]
-cxxflags = ["--std=c++20"]
-ldflags = ["-flto"]
+[profile.release]
+cflags = ["{common_c_flags}", "-s", "-O3", "-flto"]
+cxxflags = ["{common_cxx_flags}", "-s", "-O3", "-flto"]
+ldflags = ["-s", "-flto"]
 
-[binaries."quest-on-saer-tor"]
+[binary."quest-on-saer-tor"]
 dependencies = [
-    "src/main.c",
+    "src/main.cc",
     # "src/lib.c",
 ]
