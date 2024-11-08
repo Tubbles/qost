@@ -1,5 +1,10 @@
-[genvar]
-wren = "{root}/src/modules/wren"
+[variable]
+src = "{root}/src"
+modules = "{src}/modules"
+doctest = "{modules}/doctest"
+fmt = "{modules}/fmt"
+lua = "{modules}/lua"
+# wren = "{modules}/wren"
 common_compile_flags = [
     "-fdiagnostics-color=always",
 
@@ -24,7 +29,10 @@ common_compile_flags = [
     "-D_FORTIFY_SOURCE=2",
     "-D_GLIBCXX_ASSERTIONS",
 
-    "-I {wren}/src/include",
+    "-I {doctest}",
+    "-I {fmt}/include",
+    "-I {lua}",
+    # "-I {wren}/src/include",
 ]
 common_c_flags = ["-xc", "--std=c17", "{common_compile_flags}"]
 common_cxx_flags = [
@@ -38,8 +46,10 @@ common_cxx_flags = [
 common_ld_flags = [
     "-fdiagnostics-color=always",
 
-    "-L {wren}/lib",
-    "-l:libwren.a",
+    # "-L {wren}/lib",
+    # "-l:libwren.a",
+    "-L {lua}",
+    "-l:liblua.a",
     #
 ]
 
@@ -67,7 +77,8 @@ ldflags = ["{common_ld_flags}", "-s", "-flto"]
 
 [binary."quest-on-saer-tor"]
 dependencies = [
-    "src/main.cc",
-    "src/modules/wren/lib/libwren.a",
+    "{src}/main.cc",
+    # "{wren}/lib/libwren.a",
+    "{lua}/liblua.a",
     #
 ]

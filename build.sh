@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 
-set -e
+set -eo pipefail
 
 usage="$0 [command...]
 
@@ -86,6 +86,11 @@ if [[ ! -f "${build_dir}/build.ninja" ]]; then
 fi
 
 mkdir -p "${build_dir}"
+
+ninja_gen_args+=(
+    "--build-dir"
+    "${build_dir}"
+)
 
 if [[ ${verbose} == true ]]; then
     ninja_gen_args+=("--verbose")

@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 
-set -e
+set -eEo pipefail
 
 all_modules=(
-    "fmt"
     "doctest"
+    "fmt"
+    "lua"
     "wren"
 )
 
-usage="$0 [command...] [module...]
+usage="$0 [command... | module...]
 
 Sets up all third party dependencies for this project
 
@@ -77,35 +78,49 @@ fi
 for module in "${selected_modules[@]}"; do
     echo "Setting up ${module}"
 
-    if [[ "${module}" == "fmt" ]]; then
+    if [[ "${module}" == "doctest" ]]; then
         (
-            cd "${modules_dir}/fmt"
+            echo "doctest: nothing to build"
+        )
+    elif [[ "${module}" == "fmt" ]]; then
+        (
+            cd "${modules_dir}/${module}"
             if [[ ${clean} == true ]]; then
                 rm -fr "build"
             fi
             mkdir -p build
             cd build
             docker_step cmake ..
-            docker_step make -O -j
+            docker_step make -s -O -j
             if [[ ${test} == true ]]; then
                 docker_step make test
             fi
         )
-    elif [[ "${module}" == "doctest" ]]; then
+    elif [[ "${module}" == "lua" ]]; then
         (
-            echo "doctest: nothing to build"
+            cd "${modules_dir}/${module}"
+            if [[ ${clean} == true ]]; then
+                docker_step make clean
+            fi
+            docker_step make -s -O -j
+            if [[ ${test} == true ]]; then
+                cd testes/libs
+                docker_step make -s -O -j
+                cd "${modules_dir}/${module}"
+
+                docker_step bash ./all | tee log
+                result="$(tail -n3 log | head -n 1 | tr -d '\r')"
+                rm log
+                if [[ "${result}" != "    final OK!!!!" ]]; then false; fi
+            fi
         )
     elif [[ "${module}" == "wren" ]]; then
         (
-            cd "${modules_dir}/wren"
+            cd "${modules_dir}/${module}"
             if [[ ${clean} == true ]]; then
-                :
-                # rm -fr "build"
                 docker_step make -C projects/make clean
             fi
-            # mkdir -p build
-            # docker_step python3 "util/generate_amalgamation.py" >"build/wren.c"
-            docker_step make -C projects/make -O -j
+            docker_step make -C projects/make -s -O -j
             if [[ ${test} == true ]]; then
                 :
                 # docker_step python3 "util/test.py"

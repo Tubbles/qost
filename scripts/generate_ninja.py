@@ -4,16 +4,16 @@
 # from typing import dict
 
 
-def replace_from_genvar_dict(string_in: str, genvars_dict: dict[str, str]) -> str:
+def replace_from_variable_dict(string_in: str, variables_dict: dict[str, str]) -> str:
     string_out = string_in
     match_found = True
 
     while match_found:
         match_found = False
-        for key, value in genvars_dict.items():
+        for key, value in variables_dict.items():
             if "{" + key + "}" in string_out:
                 string_out = string_out.replace("{" + key + "}", value)
-                match_found = True  # Take another go around so we can nest genvars
+                match_found = True  # Take another go around so we can nest variables
 
     return string_out
 
@@ -39,6 +39,7 @@ if __name__ == "__main__":
     parser.add_argument("-i", "--input")
     parser.add_argument("-o", "--output")
     parser.add_argument("-p", "--profile")
+    parser.add_argument("-b", "--build-dir")
     parser.add_argument("-v", "--verbose", action="store_true")
     args = parser.parse_args()
 
@@ -49,21 +50,22 @@ if __name__ == "__main__":
 
     settings = str(Path(args.input).absolute())
     output = str(Path(args.output).absolute())
+    build_dir = str(Path(args.build_dir).absolute())
     profile = args.profile
 
     with open(settings, "rb") as f:
         settings_db = tomllib.load(f)
 
-    # Read in settings on genvars
-    genvars = {"root": f"{root}"}
-    for genvar_key, genvar_value in settings_db["genvar"].items():
-        var = genvar_value
+    # Read in settings on variables
+    variables = {"root": f"{root}"}
+    for variable_key, variable_value in settings_db["variable"].items():
+        var = variable_value
         if type(var) == list:
-            var = " ".join(genvar_value)
-        genvars[genvar_key] = var
+            var = " ".join(variable_value)
+        variables[variable_key] = var
 
     if args.verbose:
-        print(genvars)
+        print(variables)
 
     # Read in the settings on profiles
     profile_db = {}
@@ -81,9 +83,9 @@ if __name__ == "__main__":
     nw.variable("cc", "g++")
     nw.variable("cxx", "g++")
     nw.variable("ld", "g++")
-    nw.variable("cflags", replace_from_genvar_dict((" ".join(profile_db["cflags"])), genvars))
-    nw.variable("cxxflags", replace_from_genvar_dict((" ".join(profile_db["cxxflags"])), genvars))
-    nw.variable("ldflags", replace_from_genvar_dict((" ".join(profile_db["ldflags"])), genvars))
+    nw.variable("cflags", replace_from_variable_dict(" ".join(profile_db["cflags"]), variables))
+    nw.variable("cxxflags", replace_from_variable_dict(" ".join(profile_db["cxxflags"]), variables))
+    nw.variable("ldflags", replace_from_variable_dict(" ".join(profile_db["ldflags"]), variables))
 
     nw.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d", deps="gcc")
     nw.rule("cxx", "$cxx -MD -MF $out.d $cxxflags -c -o $out $in", depfile="$out.d", deps="gcc")
@@ -97,24 +99,26 @@ if __name__ == "__main__":
             "builds": [],
         }
         for file in binary_val["dependencies"]:
+            file = replace_from_variable_dict(file, variables)
+            file = file.replace(f"{root}/", "")
             if os.path.splitext(file)[-1] in [".c"]:
                 ninja_db["builds"].append(
                     {
-                        "input": f"{root}/{file}",
+                        "input": str(Path(f"{file}").absolute()),
                         "rule": "cc",
-                        "output": f"obj/{file}.o",
+                        "output": str(Path(f"{build_dir}/obj/{file}.o").absolute()),
                     }
                 )
             elif os.path.splitext(file)[-1] in [".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C"]:
                 ninja_db["builds"].append(
                     {
-                        "input": f"{root}/{file}",
+                        "input": str(Path(f"{file}").absolute()),
                         "rule": "cxx",
-                        "output": f"obj/{file}.o",
+                        "output": str(Path(f"{build_dir}/obj/{file}.o").absolute()),
                     }
                 )
             elif os.path.splitext(file)[-1] in [".a"]:
-                binary_deps += [f"{root}/{file}"]
+                binary_deps += [str(Path(f"{file}").absolute())]
 
         binary_deps += [entry["output"] for entry in ninja_db["builds"]]
         nw.build(binary_key, "ld", binary_deps)

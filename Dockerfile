@@ -15,6 +15,9 @@ RUN pip install --break-system-packages ninja_syntax
 RUN apt install -y \
     cmake
 
+RUN apt install -y \
+    libreadline-dev
+
 # RUN rm -fr /var/lib/apt/lists/*
 
 # Passwordless sudo for all
