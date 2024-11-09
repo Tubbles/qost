@@ -7,6 +7,7 @@ lua = "{modules}/lua"
 # wren = "{modules}/wren"
 common_compile_flags = [
     "-fdiagnostics-color=always",
+    "-flto",
 
     "-Wall",
     "-Wextra",
@@ -45,6 +46,7 @@ common_cxx_flags = [
 ]
 common_ld_flags = [
     "-fdiagnostics-color=always",
+    "-flto",
 
     # "-L {wren}/lib",
     # "-l:libwren.a",
@@ -55,29 +57,52 @@ common_ld_flags = [
 
 [profile.debug]
 cflags = [
-    "{common_c_flags}",
     "-Og",
     "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
+    "{common_c_flags}",
 ]
 cxxflags = [
-    "{common_cxx_flags}",
     "-Og",
     "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
+    "{common_cxx_flags}",
 ]
-ldflags = ["{common_ld_flags}", "-fsanitize=address", "-fsanitize=undefined"]
+ldflags = [
+    "-fsanitize=address",
+    "-fsanitize=undefined",
+    "{common_ld_flags}",
+    #
+]
 
 [profile.release]
-cflags = ["{common_c_flags}", "-s", "-O3", "-flto"]
-cxxflags = ["{common_cxx_flags}", "-s", "-O3", "-flto"]
-ldflags = ["{common_ld_flags}", "-s", "-flto"]
+cflags = [
+    "-s",
+    "-O3",
+    "{common_c_flags}",
+    #
+]
+cxxflags = [
+    "-s",
+    "-O3",
+    "{common_cxx_flags}",
+    #
+]
+ldflags = [
+    "-s",
+    "{common_ld_flags}",
+    #
+]
 
 [binary."quest-on-saer-tor"]
 dependencies = [
     "{src}/main.cc",
+    "{lua}/liblua.a",
+    #
+]
+implicit_dependencies = [
     # "{wren}/lib/libwren.a",
     "{lua}/liblua.a",
     #

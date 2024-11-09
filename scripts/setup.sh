@@ -22,15 +22,20 @@ Sets up all third party dependencies for this project
 
 [module]... Build only the selected modules. Can be zero or more of (in any order):${all_modules[*]/#/\\n* }"
 
-my_dir="$(dirname "$(realpath "$0")")"
-modules_dir="${my_dir}/src/modules"
-source "${my_dir}/common.source"
+root_dir="$(git rev-parse --show-toplevel)"
+script_dir="${root_dir}/scripts"
+source "${script_dir}/common.source"
+modules_dir="${root_dir}/src/modules"
 
 clean=false
 verbose=false
 test=false
 do_all_modules=true
 selected_modules=()
+make_args=(
+    "-O"
+    "-j"
+)
 
 # Check args
 while (($# > 0)); do
@@ -67,7 +72,11 @@ while (($# > 0)); do
     shift
 done
 
-git -C "${my_dir}" submodule update --init --recursive
+git -C "${root_dir}" submodule update --init --recursive
+
+if [[ ${verbose} == false ]]; then
+    make_args+=("-s")
+fi
 
 if [[ ${do_all_modules} == true ]]; then
     for module in "${all_modules[@]}"; do
@@ -88,12 +97,16 @@ for module in "${selected_modules[@]}"; do
             if [[ ${clean} == true ]]; then
                 rm -fr "build"
             fi
-            mkdir -p build
-            cd build
-            docker_step cmake ..
-            docker_step make -s -O -j
+
+            if [[ ! -d "build" ]]; then
+                mkdir -p "build"
+                docker_step cmake -B "build"
+            fi
+
+            docker_step make -C "build" "${make_args[@]}"
+
             if [[ ${test} == true ]]; then
-                docker_step make test
+                docker_step make -C "build" "${make_args[@]}" test
             fi
         )
     elif [[ "${module}" == "lua" ]]; then
@@ -102,10 +115,12 @@ for module in "${selected_modules[@]}"; do
             if [[ ${clean} == true ]]; then
                 docker_step make clean
             fi
-            docker_step make -s -O -j
+
+            docker_step make "${make_args[@]}"
+
             if [[ ${test} == true ]]; then
                 cd testes/libs
-                docker_step make -s -O -j
+                docker_step make "${make_args[@]}"
                 cd "${modules_dir}/${module}"
 
                 docker_step bash ./all | tee log
@@ -120,7 +135,9 @@ for module in "${selected_modules[@]}"; do
             if [[ ${clean} == true ]]; then
                 docker_step make -C projects/make clean
             fi
-            docker_step make -C projects/make -s -O -j
+
+            docker_step make -C projects/make "${make_args[@]}"
+
             if [[ ${test} == true ]]; then
                 :
                 # docker_step python3 "util/test.py"

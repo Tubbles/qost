@@ -18,6 +18,11 @@ RUN apt install -y \
 RUN apt install -y \
     libreadline-dev
 
+RUN pip install --break-system-packages gitpython
+
+RUN apt install -y \
+    git
+
 # RUN rm -fr /var/lib/apt/lists/*
 
 # Passwordless sudo for all

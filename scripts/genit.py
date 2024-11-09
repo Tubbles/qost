@@ -20,6 +20,7 @@ if __name__ == "__main__":
     # Standard libs
     from pathlib import Path
     import argparse
+    import git
     import inspect
     import os
     import sys
@@ -29,9 +30,10 @@ if __name__ == "__main__":
     from ninja_syntax import Writer as NinjaWriter
 
     my_path = str(Path(inspect.getsourcefile(lambda: 0)).absolute())
-    my_dir = os.path.dirname(my_path)
+    # my_dir = os.path.dirname(my_path)
     my_name = os.path.basename(my_path)
-    root = str(Path(my_dir).parent)
+    git_repo = git.Repo(my_path, search_parent_directories=True)
+    root = git_repo.git.rev_parse("--show-toplevel")
 
     parser = argparse.ArgumentParser(prog=my_name, description="Generate ninja template")
     parser.add_argument("-i", "--input")
@@ -87,39 +89,50 @@ if __name__ == "__main__":
 
     nw.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d", deps="gcc")
     nw.rule("cxx", "$cxx -MD -MF $out.d $cxxflags -c -o $out $in", depfile="$out.d", deps="gcc")
-    nw.rule("ld", "$ld -o $out $in $ldflags")
+    nw.rule("ld", "$ld $ldflags -o $out $in")
 
     all_binaries = []
     for binary_key, binary_val in settings_db["binary"].items():
         all_binaries += [binary_key]
         binary_deps = []
+        binary_implicit_deps = []
         ninja_db = {
             "builds": [],
         }
         for file in binary_val["dependencies"]:
             file = replace_from_variable_dict(file, variables)
-            file = file.replace(f"{root}/", "")
-            if os.path.splitext(file)[-1] in [".c"]:
+            file_relative_to_root = file.replace(f"{root}/", "")
+            file_ext = os.path.splitext(file)[-1]
+
+            if file_ext in [".c"]:
                 ninja_db["builds"].append(
                     {
-                        "input": str(Path(f"{file}").absolute()),
+                        "input": file,
                         "rule": "cc",
-                        "output": str(Path(f"{build_dir}/obj/{file}.o").absolute()),
+                        "output": str(Path(f"{build_dir}/obj/{file_relative_to_root}.o").absolute()),
                     }
                 )
-            elif os.path.splitext(file)[-1] in [".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C"]:
+            elif file_ext in [".cc", ".cp", ".cxx", ".cpp", ".CPP", ".c++", ".C"]:
                 ninja_db["builds"].append(
                     {
-                        "input": str(Path(f"{file}").absolute()),
+                        "input": file,
                         "rule": "cxx",
-                        "output": str(Path(f"{build_dir}/obj/{file}.o").absolute()),
+                        "output": str(Path(f"{build_dir}/obj/{file_relative_to_root}.o").absolute()),
                     }
                 )
-            elif os.path.splitext(file)[-1] in [".a"]:
-                binary_deps += [str(Path(f"{file}").absolute())]
+            elif file_ext in [".a"]:
+                binary_deps += [file]
+
+        for file in binary_val["implicit_dependencies"]:
+            file = replace_from_variable_dict(file, variables)
+            file_relative_to_root = file.replace(f"{root}/", "")
+            file_ext = os.path.splitext(file)[-1]
+
+            if file_ext in [".a"]:
+                binary_implicit_deps += [file]
 
         binary_deps += [entry["output"] for entry in ninja_db["builds"]]
-        nw.build(binary_key, "ld", binary_deps)
+        nw.build(binary_key, "ld", binary_deps, implicit=binary_implicit_deps)
         for entry in ninja_db["builds"]:
             nw.build(entry["output"], entry["rule"], entry["input"])
 

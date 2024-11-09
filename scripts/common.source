@@ -1,7 +1,10 @@
 #!/usr/bin/env bash
 # -*- coding: utf-8 -*-
 
-my_dir="$(dirname "$(realpath "$0")")"
+# shellcheck disable=2034
+root_dir="$(git rev-parse --show-toplevel)"
+# shellcheck disable=2034
+script_dir="${root_dir}/scripts"
 
 step() {
     if [[ ${verbose} == true ]]; then
@@ -16,5 +19,5 @@ step() {
 }
 
 docker_step() {
-    step "${my_dir}/docker.sh" "$@"
+    step "${script_dir}/docker.sh" "$@"
 }

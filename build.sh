@@ -16,9 +16,17 @@ Facilitates building, testing, and running this project.
 * setup     - Exit this script and set up third party dependencies instead
 * verbose   - Print verbose information to the terminal"
 
-my_dir="$(dirname "$(realpath "$0")")"
-project="$(basename "${my_dir}")"
-source "${my_dir}/common.source"
+root_dir="$(git rev-parse --show-toplevel)"
+script_dir="${root_dir}/scripts"
+source "${script_dir}/common.source"
+project="$(basename "${root_dir}")"
+
+# First we check if we need to do the first time setup
+num_third_party_files="$(find src/modules/ -type f | wc -l)"
+if ((num_third_party_files == 0)); then
+    echo "Setup needed"
+    "${script_dir}/setup.sh"
+fi
 
 build=true
 clean=false
@@ -27,7 +35,7 @@ generate=false
 run=false
 verbose=false
 
-ninja_gen_args=()
+genit_args=()
 ninja_args=()
 
 # Check args
@@ -43,7 +51,7 @@ while (($# > 0)); do
         debug=false
     elif [[ "$1" =~ ^se?t?u?p?$ ]]; then
         shift
-        exec "${my_dir}/setup.sh" "$@"
+        exec "${script_dir}/setup.sh" "$@"
     elif [[ "$1" =~ ^ve?r?b?o?s?e?$ ]]; then
         verbose=true
     elif [[ "$1" =~ ^he?l?p?$ ]] || [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
@@ -63,19 +71,11 @@ else
     build_type="release"
 fi
 
-build_dir="${my_dir}/output/${build_type}"
+build_dir="${root_dir}/output/${build_type}"
 
-ninja_gen_args+=(
-    "-i"
-    "${my_dir}/ng-config.toml"
-    "-o"
-    "${build_dir}/build.ninja"
-)
-
-ninja_gen_args+=(
-    "--profile"
-    "${build_type}"
-)
+genit_args+=("-i" "${root_dir}/genit.toml")
+genit_args+=("-o" "${build_dir}/build.ninja")
+genit_args+=("--profile" "${build_type}")
 
 if [[ ${clean} == true ]]; then
     rm -fr "${build_dir}"
@@ -87,23 +87,21 @@ fi
 
 mkdir -p "${build_dir}"
 
-ninja_gen_args+=(
-    "--build-dir"
-    "${build_dir}"
-)
+genit_args+=("--build-dir" "${build_dir}")
 
 if [[ ${verbose} == true ]]; then
-    ninja_gen_args+=("--verbose")
+    genit_args+=("--verbose")
     ninja_args+=("--verbose")
 fi
 
 if [[ ${generate} == true ]]; then
-    docker_step "${my_dir}/scripts/generate_ninja.py" "${ninja_gen_args[@]}"
-    docker_step ninja -C "${build_dir}" -t compdb >"${build_dir}/compile_commands.json"
+    docker_step "${script_dir}/genit.py" "${genit_args[@]}"
 
     if [[ ${verbose} == true ]]; then
         cat "${build_dir}/build.ninja"
     fi
+
+    docker_step ninja -C "${build_dir}" -t compdb >"${build_dir}/compile_commands.json"
 fi
 
 if [[ ${build} == true ]]; then
