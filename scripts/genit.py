@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-# from typing import dict
-
 
 def replace_from_variable_dict(string_in: str, variables_dict: dict[str, str]) -> str:
     string_out = string_in
@@ -35,7 +33,7 @@ if __name__ == "__main__":
     my_name = os.path.basename(my_path)
     root = str(Path(my_dir).parent)
 
-    parser = argparse.ArgumentParser(prog=my_name, description="What the program does")
+    parser = argparse.ArgumentParser(prog=my_name, description="Generate ninja template")
     parser.add_argument("-i", "--input")
     parser.add_argument("-o", "--output")
     parser.add_argument("-p", "--profile")
@@ -56,7 +54,7 @@ if __name__ == "__main__":
     with open(settings, "rb") as f:
         settings_db = tomllib.load(f)
 
-    # Read in settings on variables
+    # Read in settings on variables - first define default variables
     variables = {"root": f"{root}"}
     for variable_key, variable_value in settings_db["variable"].items():
         var = variable_value
