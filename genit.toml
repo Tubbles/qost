@@ -99,7 +99,6 @@ ldflags = [
 [binary."quest-on-saer-tor"]
 dependencies = [
     "{src}/main.cc",
-    "{lua}/liblua.a",
     #
 ]
 implicit_dependencies = [

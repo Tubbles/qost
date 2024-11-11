@@ -89,7 +89,7 @@ if __name__ == "__main__":
 
     nw.rule("cc", "$cc -MD -MF $out.d $cflags -c -o $out $in", depfile="$out.d", deps="gcc")
     nw.rule("cxx", "$cxx -MD -MF $out.d $cxxflags -c -o $out $in", depfile="$out.d", deps="gcc")
-    nw.rule("ld", "$ld $ldflags -o $out $in")
+    nw.rule("ld", "$ld -o $out $in $ldflags")  # Flag ordering here is important for ld
 
     all_binaries = []
     for binary_key, binary_val in settings_db["binary"].items():
