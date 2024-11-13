@@ -22,6 +22,7 @@ def main(
     profile: str,
     build_dir: str,
     verbose: bool = False,
+    extra_verbose: bool = False,
 ):
     # Standard libs
     from pathlib import Path
@@ -60,7 +61,7 @@ def main(
             var = " ".join(variable_value)
         variables[variable_key] = var
 
-    if verbose:
+    if extra_verbose:
         print(variables)
 
     # Read in the settings on profiles
@@ -69,7 +70,7 @@ def main(
         if profile_key == profile:
             profile_db = profile_val
 
-    if verbose:
+    if extra_verbose:
         print(profile_db)
 
     build_script_file = open(output, "w")
@@ -150,6 +151,8 @@ def main(
     ]
     if verbose:
         equivalent_commandline.append("--verbose")
+    if extra_verbose:
+        equivalent_commandline.append("--extra-verbose")
     nw.rule("regen_ninja", " ".join(equivalent_commandline), generator=True)
     nw.build("build.ninja", "regen_ninja", settings, implicit=my_path)
 
@@ -177,11 +180,14 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--profile")
     parser.add_argument("-b", "--build-dir")
     parser.add_argument("-v", "--verbose", action="store_true")
+    parser.add_argument("-e", "--extra-verbose", action="store_true")
     args = parser.parse_args()
 
-    if args.verbose:
+    if args.extra_verbose:
         print(args)
         print(sys.argv)
+
+    if args.verbose or args.extra_verbose:
         print("Generating ninja build file")
 
     args = {
@@ -190,6 +196,7 @@ if __name__ == "__main__":
         "profile": args.profile,
         "build_dir": args.build_dir,
         "verbose": args.verbose,
+        "extra_verbose": args.extra_verbose,
     }
 
     main(**args)

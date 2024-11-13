@@ -28,9 +28,9 @@ fi
 git -C "${root_dir}" submodule update --init --recursive
 
 make_args=(
+    "--no-print-directory"
     "-O"
     "-j"
-    "--no-print-directory"
 )
 
 if [[ ${verbose} == false ]]; then
@@ -75,7 +75,9 @@ if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
             step make clean
         fi
 
+        echo "Building ${module}"
         step make "${make_args[@]}"
+        echo "Building ${module} done"
 
         if [[ ${test} == true ]]; then
             cd testes/libs

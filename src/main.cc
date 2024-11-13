@@ -149,9 +149,9 @@ int main(int argc, char *argv[]) {
 
     tss::LuaInstance vm;
     if (vm.get_number("a").okOrDefault(0))
-        return 0;
-    else
         return 2;
+    else
+        return 0;
 }
 
 #if 0

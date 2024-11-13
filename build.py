@@ -9,8 +9,8 @@ available_modules = [
 ]
 
 available_modules_help_text = f"""Optionally takes zero or more module names to operate on (defaults to all, in any order):\n\
-{"\n".join([f"{' '*20}* {module} {' '*(10 - len(module))}" for module in available_modules])}\n\
-{' '*18}The module names can also be given without giving the `setup' command, making it implicitly selected"""
+{"\n".join([f"{' '*24}* {module} {' '*(14 - len(module))}" for module in available_modules])}\n\
+{' '*22}The module names can also be given without giving the `setup' command, making it implicitly selected"""
 
 available_arguments = [
     ("extra-verbose", "Print extra verbose information suitable for debugging the build process to the terminal"),
@@ -75,7 +75,7 @@ if __name__ == "__main__":
     )
 
     help_text = f"""can be zero or more of (in any order, partial words supported):\n\
-{"\n".join([f"  * {arg[0]} {' '*(10 - len(arg[0]))} - {arg[1]}" for arg in available_arguments])}"""
+{"\n".join([f"  * {arg[0]} {' '*(14 - len(arg[0]))} - {arg[1]}" for arg in available_arguments])}"""
 
     parser.add_argument("command", nargs="*", help=help_text)
     args = parser.parse_args()
@@ -106,7 +106,7 @@ if __name__ == "__main__":
     run = "run" in expanded_args
     setup = "setup" in expanded_args or implicit_setup
     test = "test" in expanded_args
-    verbose = "verbose" in expanded_args or extra_verbose
+    verbose = "verbose" in expanded_args
 
     if extra_verbose:
         print(args)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         if not selected_modules:
             selected_modules = available_modules
         setup_args = []
-        if verbose:
+        if verbose or extra_verbose:
             setup_args.append("--verbose")
         if pristine:
             setup_args.append("--pristine")
@@ -165,13 +165,14 @@ if __name__ == "__main__":
     ninja_args += ["-C", build_dir]
 
     genit_args["verbose"] = verbose
-    if verbose:
+    genit_args["extra_verbose"] = extra_verbose
+    if verbose or extra_verbose:
         ninja_args.append("--verbose")
 
     if generate:
         genit.main(**genit_args)
 
-        if verbose:
+        if extra_verbose:
             with open(ninja_build_file, "r") as ninja_build:
                 print("".join(ninja_build.readlines()))
 
@@ -182,7 +183,8 @@ if __name__ == "__main__":
         subprocess.run(["ninja"] + ninja_args + [project])
 
     if run:
-        if verbose:
-            print("Running project")
-        returncode = subprocess.run(str(Path(f"{build_dir}/{project}"))).returncode
+        program = str(Path(f"{build_dir}/{project}"))
+        if verbose or extra_verbose:
+            print(f"Running project {program}")
+        returncode = subprocess.run(program).returncode
         sys.exit(returncode)
