@@ -38,7 +38,7 @@ common_compile_flags = [
 common_c_flags = ["-xc", "--std=c17", "{common_compile_flags}"]
 common_cxx_flags = [
     "-xc++",
-    "--std=c++20",
+    "--std=c++23",
     "{common_compile_flags}",
     "-Wnon-virtual-dtor",
     "-Wold-style-cast",
@@ -52,6 +52,8 @@ common_ld_flags = [
     # "-l:libwren.a",
     "-L {lua}",
     "-l:liblua.a",
+    "-L {fmt}/build",
+    "-l:libfmt.a",
     #
 ]
 
@@ -71,13 +73,15 @@ cxxflags = [
     "{common_cxx_flags}",
 ]
 ldflags = [
+    "-Og",
+    "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
     "{common_ld_flags}",
     #
 ]
 
-[profile.release]
+[profile.optimized]
 cflags = [
     "-s",
     "-O3",
@@ -92,6 +96,7 @@ cxxflags = [
 ]
 ldflags = [
     "-s",
+    "-O3",
     "{common_ld_flags}",
     #
 ]
@@ -104,5 +109,6 @@ dependencies = [
 implicit_dependencies = [
     # "{wren}/lib/libwren.a",
     "{lua}/liblua.a",
+    "{fmt}/build/libfmt.a",
     #
 ]

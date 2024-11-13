@@ -1,0 +1,2 @@
+GitPython==3.1.43
+ninja_syntax==1.7.2

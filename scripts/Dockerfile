@@ -1,27 +1,19 @@
 # syntax=docker/dockerfile:1
 FROM docker.io/ubuntu:24.04 AS qost-builder
 
-RUN apt update
-
-RUN apt install -y \
+RUN apt update && apt install -y \
+    cmake \
+    git \
+    libreadline-dev \
     ninja-build \
     pip \
     python-is-python3 \
     python3 \
     sudo
 
-RUN pip install --break-system-packages ninja_syntax
+COPY requirements.txt requirements.txt
 
-RUN apt install -y \
-    cmake
-
-RUN apt install -y \
-    libreadline-dev
-
-RUN pip install --break-system-packages gitpython
-
-RUN apt install -y \
-    git
+RUN pip install --break-system-packages -r requirements.txt
 
 # RUN rm -fr /var/lib/apt/lists/*
 

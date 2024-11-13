@@ -15,3 +15,26 @@ To do:
 * cppcheck
 * cppclean
 * wren or lua?
+
+## Building
+
+First make sure the third party libs are fetched and built:
+
+```sh
+./scripts/
+```
+
+If you want to build inside an ephemeral docker container (recommended), make sure to first build the docker image:
+
+```sh
+./scripts/docker.sh build
+```
+
+Then build the third party libraries and the project:
+
+```sh
+./scripts/docker.sh ./scripts/setup.sh
+./scripts/docker.sh ./build.py [arguments]
+```
+
+If you do not want to use the docker, just call the build python script manually (requires set up )

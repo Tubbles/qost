@@ -8,5 +8,8 @@
                 "allowTrailingCommas": true
             }
         }
+    ],
+    "python.analysis.extraPaths": [
+        "./scripts"
     ]
 }

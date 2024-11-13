@@ -16,55 +16,51 @@ def replace_from_variable_dict(string_in: str, variables_dict: dict[str, str]) -
     return string_out
 
 
-if __name__ == "__main__":
+def main(
+    input: str,
+    output: str,
+    profile: str,
+    build_dir: str,
+    verbose: bool = False,
+):
     # Standard libs
     from pathlib import Path
-    import argparse
     import git
     import inspect
     import os
-    import sys
     import tomllib
 
     # 3rd party libs
     from ninja_syntax import Writer as NinjaWriter
+    from ninja import ninja
 
-    my_path = str(Path(inspect.getsourcefile(lambda: 0)).absolute())
-    # my_dir = os.path.dirname(my_path)
-    my_name = os.path.basename(my_path)
+    ninja
+
+    my_path_obj = Path(inspect.getsourcefile(lambda: 0)).absolute()
+    my_path = str(my_path_obj)
     git_repo = git.Repo(my_path, search_parent_directories=True)
     root = git_repo.git.rev_parse("--show-toplevel")
 
-    parser = argparse.ArgumentParser(prog=my_name, description="Generate ninja template")
-    parser.add_argument("-i", "--input")
-    parser.add_argument("-o", "--output")
-    parser.add_argument("-p", "--profile")
-    parser.add_argument("-b", "--build-dir")
-    parser.add_argument("-v", "--verbose", action="store_true")
-    args = parser.parse_args()
-
-    if args.verbose:
-        print(args)
-        print(sys.argv)
-        print("Generating ninja build file")
-
-    settings = str(Path(args.input).absolute())
-    output = str(Path(args.output).absolute())
-    build_dir = str(Path(args.build_dir).absolute())
-    profile = args.profile
+    settings = str(Path(input).absolute())
+    output = str(Path(output).absolute())
+    build_dir = str(Path(build_dir).absolute())
 
     with open(settings, "rb") as f:
         settings_db = tomllib.load(f)
 
     # Read in settings on variables - first define default variables
-    variables = {"root": f"{root}"}
+    variables = {
+        "root": f"{root}",
+        "in": "$in",  # Ninja implicit variable
+        "out": "$out",  # Ninja implicit variable
+    }
     for variable_key, variable_value in settings_db["variable"].items():
         var = variable_value
         if type(var) == list:
             var = " ".join(variable_value)
         variables[variable_key] = var
 
-    if args.verbose:
+    if verbose:
         print(variables)
 
     # Read in the settings on profiles
@@ -73,7 +69,7 @@ if __name__ == "__main__":
         if profile_key == profile:
             profile_db = profile_val
 
-    if args.verbose:
+    if verbose:
         print(profile_db)
 
     build_script_file = open(output, "w")
@@ -141,8 +137,59 @@ if __name__ == "__main__":
             nw.default(binary_key)
 
     # Create rules and builds to automatically regenerate the build.ninja
-    nw.rule("regen_ninja", " ".join(sys.argv), generator=True)
+    equivalent_commandline = [
+        my_path,
+        "--input",
+        input,
+        "--output",
+        output,
+        "--profile",
+        profile,
+        "--build-dir",
+        build_dir,
+    ]
+    if verbose:
+        equivalent_commandline.append("--verbose")
+    nw.rule("regen_ninja", " ".join(equivalent_commandline), generator=True)
     nw.build("build.ninja", "regen_ninja", settings, implicit=my_path)
 
     nw.build("all", "phony", all_binaries)
     nw.close()
+
+
+if __name__ == "__main__":
+    # Standard libs
+    from pathlib import Path
+    import argparse
+    import inspect
+    import sys
+
+    # 3rd party libs
+    from ninja_syntax import Writer as NinjaWriter
+
+    my_path_obj = Path(inspect.getsourcefile(lambda: 0)).absolute()
+    my_path = str(my_path_obj)
+    my_name = my_path_obj.name
+
+    parser = argparse.ArgumentParser(prog=my_name, description="Generate ninja template")
+    parser.add_argument("-i", "--input")
+    parser.add_argument("-o", "--output")
+    parser.add_argument("-p", "--profile")
+    parser.add_argument("-b", "--build-dir")
+    parser.add_argument("-v", "--verbose", action="store_true")
+    args = parser.parse_args()
+
+    if args.verbose:
+        print(args)
+        print(sys.argv)
+        print("Generating ninja build file")
+
+    args = {
+        "input": args.input,
+        "output": args.output,
+        "profile": args.profile,
+        "build_dir": args.build_dir,
+        "verbose": args.verbose,
+    }
+
+    main(**args)

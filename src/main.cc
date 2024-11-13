@@ -143,11 +143,15 @@ std::ostream &operator<<(std::ostream &stream, const LuaError &error) {
 
 int main(int argc, char *argv[]) {
     std::vector<std::string> args(argv, argv + argc);
+
+    for (auto arg : args)
+        fmt::print("#{}#\n", arg);
+
     tss::LuaInstance vm;
     if (vm.get_number("a").okOrDefault(0))
-        return 1;
-    else
         return 0;
+    else
+        return 2;
 }
 
 #if 0
