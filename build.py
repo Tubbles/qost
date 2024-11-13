@@ -66,7 +66,7 @@ if __name__ == "__main__":
     my_name = my_path_obj.name
     git_repo = git.Repo(my_path, search_parent_directories=True)
     root = git_repo.git.rev_parse("--show-toplevel")
-    project = str(Path(root).stem)
+    project = "quest-on-saer-tor"
 
     parser = argparse.ArgumentParser(
         prog=my_name,
