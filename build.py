@@ -13,7 +13,6 @@ available_modules_help_text = f"""Optionally takes zero or more module names to 
 {' '*22}The module names can also be given without giving the `setup' command, making it implicitly selected"""
 
 available_arguments = [
-    ("extra-verbose", "Print extra verbose information suitable for debugging the build process to the terminal"),
     ("generate", "Only generate the ninja script and compile commands database, do not compile"),
     ("optimized", "Build with optimized configuration instead of debug configuration, suitable for releases"),
     ("pristine", "Clean the build directory before build"),
@@ -99,7 +98,6 @@ if __name__ == "__main__":
             else:
                 implicit_setup = True
 
-    extra_verbose = "extra-verbose" in expanded_args
     generate = "generate" in expanded_args
     optimized = "optimized" in expanded_args
     pristine = "pristine" in expanded_args
@@ -108,7 +106,7 @@ if __name__ == "__main__":
     test = "test" in expanded_args
     verbose = "verbose" in expanded_args
 
-    if extra_verbose:
+    if verbose:
         print(args)
         print(sys.argv)
         pp = pprint.PrettyPrinter(depth=4)
@@ -128,7 +126,7 @@ if __name__ == "__main__":
         if not selected_modules:
             selected_modules = available_modules
         setup_args = []
-        if verbose or extra_verbose:
+        if verbose:
             setup_args.append("--verbose")
         if pristine:
             setup_args.append("--pristine")
@@ -165,14 +163,13 @@ if __name__ == "__main__":
     ninja_args += ["-C", build_dir]
 
     genit_args["verbose"] = verbose
-    genit_args["extra_verbose"] = extra_verbose
-    if verbose or extra_verbose:
+    if verbose:
         ninja_args.append("--verbose")
 
     if generate:
         genit.main(**genit_args)
 
-        if extra_verbose:
+        if verbose:
             with open(ninja_build_file, "r") as ninja_build:
                 print("".join(ninja_build.readlines()))
 
@@ -184,7 +181,7 @@ if __name__ == "__main__":
 
     if run:
         program = str(Path(f"{build_dir}/{project}"))
-        if verbose or extra_verbose:
+        if verbose:
             print(f"Running project {program}")
         returncode = subprocess.run(program).returncode
         sys.exit(returncode)
