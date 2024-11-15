@@ -92,6 +92,27 @@ if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
     )
 fi
 
+module="wasmer"
+if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
+    (
+        echo "Setting up ${module}"
+        mkdir -p "${modules_dir}/${module}"
+        cd "${modules_dir}/${module}"
+
+        if [[ ${pristine} == true ]]; then
+            rm -fr wasmer-linux-amd64*
+        fi
+
+        if [[ ! -d "wasmer-linux-amd64" ]]; then
+            if [[ ! -r "wasmer-linux-amd64.tar.gz" ]]; then
+                wget https://github.com/wasmerio/wasmer/releases/download/v5.0.1/wasmer-linux-amd64.tar.gz
+            fi
+            mkdir -p wasmer-linux-amd64
+            tar -C wasmer-linux-amd64/ -zxvf wasmer-linux-amd64.tar.gz
+        fi
+    )
+fi
+
 module="wren"
 if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
     (

@@ -4,6 +4,7 @@ modules = "{src}/modules"
 doctest = "{modules}/doctest"
 fmt = "{modules}/fmt"
 lua = "{modules}/lua"
+wasmer = "{modules}/wasmer/wasmer-linux-amd64"
 # wren = "{modules}/wren"
 common_compile_flags = [
     "-fdiagnostics-color=always",
@@ -33,6 +34,7 @@ common_compile_flags = [
     "-I {doctest}",
     "-I {fmt}/include",
     "-I {lua}",
+    "-I {wasmer}/include",
     # "-I {wren}/src/include",
 ]
 common_c_flags = ["-xc", "--std=c17", "{common_compile_flags}"]
@@ -54,6 +56,8 @@ common_ld_flags = [
     "-l:liblua.a",
     "-L {fmt}/build",
     "-l:libfmt.a",
+    "-L {wasmer}/lib",
+    "-l:libwasmer.a",
     #
 ]
 
@@ -110,5 +114,6 @@ implicit_dependencies = [
     # "{wren}/lib/libwren.a",
     "{lua}/liblua.a",
     "{fmt}/build/libfmt.a",
+    "{wasmer}/lib/libwasmer.a",
     #
 ]

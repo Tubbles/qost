@@ -3,6 +3,7 @@
 // #include "doctest/doctest.h"
 // #include "wren.hpp"
 #include "fmt/core.h"
+#include "wasmer.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstring>

@@ -5,6 +5,7 @@ available_modules = [
     "doctest",
     "fmt",
     "lua",
+    "wasmer",
     "wren",
 ]
 

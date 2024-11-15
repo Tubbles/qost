@@ -18,13 +18,8 @@ To do:
 
 ## Building
 
-First make sure the third party libs are fetched and built:
-
-```sh
-./scripts/
-```
-
-If you want to build inside an ephemeral docker container (recommended), make sure to first build the docker image:
+If you want to build inside an ephemeral docker container (recommended), make sure to first build the docker image
+(requires `podman`):
 
 ```sh
 ./scripts/docker.sh build
@@ -33,8 +28,10 @@ If you want to build inside an ephemeral docker container (recommended), make su
 Then build the third party libraries and the project:
 
 ```sh
-./scripts/docker.sh ./scripts/setup.sh
-./scripts/docker.sh ./build.py [arguments]
+./scripts/docker.sh ./build.py
 ```
 
-If you do not want to use the docker, just call the build python script manually (requires set up )
+The build script has more options, more info by passing `--help` as argument.
+
+If you do not want to use the docker, just call the build python script without the docker script prepended (requires
+more dependencies installed locally, see the Dockerfile)

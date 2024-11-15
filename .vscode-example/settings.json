@@ -11,5 +11,24 @@
     ],
     "python.analysis.extraPaths": [
         "./scripts"
-    ]
+    ],
+    "files.associations": {
+        "*.bb": "bitbake",
+        "*.bbappend": "bitbake",
+        "*.inc": "python",
+        "*.json": "jsonc",
+        "*.ln": "linkerscript",
+        "*.m": "matlab",
+        "*.tt": "csharp",
+        ".clang-format": "yaml",
+        ".clang-tidy": "yaml",
+        ".inputrc": "properties",
+        "*.ld": "csharp",
+        "*.overlay": "dts",
+        "*.S": "arm",
+        "*.can": "csharp",
+        "*.gdb": "perl",
+        "variant": "cpp",
+        "vector": "cpp"
+    }
 }
