@@ -37,9 +37,12 @@ common_compile_flags = [
     "-I {wasmer}/include",
     # "-I {wren}/src/include",
 ]
-common_c_flags = ["-xc", "--std=c17", "{common_compile_flags}"]
+common_c_flags = [
+    "--std=c17",
+    "{common_compile_flags}",
+    #
+]
 common_cxx_flags = [
-    "-xc++",
     "--std=c++23",
     "{common_compile_flags}",
     "-Wnon-virtual-dtor",
@@ -115,5 +118,9 @@ implicit_dependencies = [
     "{lua}/liblua.a",
     "{fmt}/build/libfmt.a",
     "{wasmer}/lib/libwasmer.a",
+    #
+]
+precompiled_headers = [
+    "{src}/inc.hh",
     #
 ]

@@ -90,10 +90,11 @@ def main(
     all_binaries = []
     for binary_key, binary_val in settings_db["binary"].items():
         all_binaries += [binary_key]
-        binary_deps = []
-        binary_implicit_deps = []
         ninja_db = {
             "builds": [],
+            "intermediate_builds": [],
+            "implicit_deps": [],
+            "precompiled_headers": [],
         }
         for file in binary_val["dependencies"]:
             file = replace_from_variable_dict(file, variables)
@@ -116,8 +117,8 @@ def main(
                         "output": str(Path(f"{build_dir}/obj/{file_relative_to_root}.o").absolute()),
                     }
                 )
-            elif file_ext in [".a"]:
-                binary_deps += [file]
+            else:
+                raise Exception(f"Unknown file {file}")
 
         for file in binary_val["implicit_dependencies"]:
             file = replace_from_variable_dict(file, variables)
@@ -125,12 +126,36 @@ def main(
             file_ext = os.path.splitext(file)[-1]
 
             if file_ext in [".a"]:
-                binary_implicit_deps += [file]
+                ninja_db["implicit_deps"] += [file]
+            else:
+                raise Exception(f"Unknown file {file}")
 
-        binary_deps += [entry["output"] for entry in ninja_db["builds"]]
-        nw.build(binary_key, "ld", binary_deps, implicit=binary_implicit_deps)
-        for entry in ninja_db["builds"]:
+        for file in binary_val["precompiled_headers"]:
+            file = replace_from_variable_dict(file, variables)
+            file_relative_to_root = file.replace(f"{root}/", "")
+            file_ext = os.path.splitext(file)[-1]
+
+            if file_ext in [".hh", ".H", ".hp", ".hxx", ".hpp", ".HPP", ".h++", ".tcc"]:
+                output = str(Path(f"{build_dir}/obj/{file_relative_to_root}.pch").absolute())
+                ninja_db["precompiled_headers"] += [output]
+                ninja_db["intermediate_builds"].append(
+                    {
+                        "input": file,
+                        "rule": "cxx",
+                        "output": output,
+                    }
+                )
+            else:
+                raise Exception(f"Unknown file {file}")
+
+        binary_deps = [entry["output"] for entry in ninja_db["builds"]]
+        nw.build(binary_key, "ld", binary_deps, implicit=ninja_db["implicit_deps"])
+
+        for entry in ninja_db["intermediate_builds"]:
             nw.build(entry["output"], entry["rule"], entry["input"])
+
+        for entry in ninja_db["builds"]:
+            nw.build(entry["output"], entry["rule"], entry["input"], implicit=ninja_db["precompiled_headers"])
 
         if len(all_binaries) == 1:
             # Mark the first binary as the default one

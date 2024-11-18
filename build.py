@@ -180,9 +180,11 @@ if __name__ == "__main__":
     if build:
         subprocess.run(["ninja"] + ninja_args + [project])
 
+    program = str(Path(f"{build_dir}/{project}"))
     if run:
-        program = str(Path(f"{build_dir}/{project}"))
         if verbose:
             print(f"Running project {program}")
         returncode = subprocess.run(program).returncode
         sys.exit(returncode)
+    else:
+        print(f"Finished building {program}")
