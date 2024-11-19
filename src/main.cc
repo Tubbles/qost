@@ -139,90 +139,355 @@ std::ostream &operator<<(std::ostream &stream, const LuaError &error) {
     };
     return stream << output(error);
 }
+
+auto wasm_mutability_to_str(wasm_mutability_t mutability) -> std::string {
+    switch (mutability) {
+    case WASM_CONST: {
+        return "const";
+    }
+    case WASM_VAR: {
+        return "var";
+    }
+    default: {
+        return fmt::format("unknown ({})", mutability);
+    }
+    }
+}
+
+auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
+    switch (valkind) {
+    case WASM_I32: {
+        return "i32";
+    }
+    case WASM_I64: {
+        return "i64";
+    }
+    case WASM_F32: {
+        return "f32";
+    }
+    case WASM_F64: {
+        return "f64";
+    }
+    case WASM_EXTERNREF: {
+        return "externref";
+    }
+    case WASM_FUNCREF: {
+        return "funcref";
+    }
+    default: {
+        return fmt::format("unknown ({})", valkind);
+    }
+    }
+}
+
+auto wasm_externkind_to_str(wasm_externkind_t externkind) -> std::string {
+    switch (externkind) {
+    case WASM_EXTERN_FUNC: {
+        return "func";
+    }
+    case WASM_EXTERN_GLOBAL: {
+        return "global";
+    }
+    case WASM_EXTERN_TABLE: {
+        return "table";
+    }
+    case WASM_EXTERN_MEMORY: {
+        return "memory";
+    }
+    default: {
+        return fmt::format("unknown ({})", externkind);
+    }
+    }
+}
+
+auto wasm_externtype_to_str(const wasm_externtype_t *externtype) -> std::string {
+    std::string str;
+    auto externkind = ::wasm_externtype_kind(externtype);
+
+    switch (externkind) {
+    case WASM_EXTERN_FUNC: {
+        auto functype = ::wasm_externtype_as_functype_const(externtype);
+        auto params = ::wasm_functype_params(functype);
+        auto results = ::wasm_functype_results(functype);
+
+        str += "(";
+        for (size_t index = 0; index < params->size; index++) {
+            auto param = params->data[index];
+            auto valkind = ::wasm_valtype_kind(param);
+            str += wasm_valkind_to_str(valkind);
+            if (index != params->size - 1)
+                str += ", ";
+        }
+        str += ") -> (";
+        for (size_t index = 0; index < results->size; index++) {
+            auto result = results->data[index];
+            auto valkind = ::wasm_valtype_kind(result);
+            str += wasm_valkind_to_str(valkind);
+            if (index != results->size - 1)
+                str += ", ";
+        }
+        str += ")";
+        break;
+    }
+    case WASM_EXTERN_GLOBAL:
+    case WASM_EXTERN_TABLE:
+    case WASM_EXTERN_MEMORY: {
+        str += "NOT YET IMPLEMENTED";
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+
+    return str;
+}
+
+auto wasm_importtype_to_str(const wasm_importtype_t *importtype) -> std::string {
+    std::string str;
+    auto module = ::wasm_importtype_module(importtype);
+    auto name = ::wasm_importtype_name(importtype);
+    auto externtype = ::wasm_importtype_type(importtype);
+    auto externkind = ::wasm_externtype_kind(externtype);
+
+    str += wasm_externkind_to_str(externkind) + " ";
+    str += std::string(module->data, module->size) + "::";
+    str += std::string(name->data, name->size);
+    str += wasm_externtype_to_str(externtype);
+
+    return str;
+}
+
+auto wasm_exporttype_to_str(const wasm_exporttype_t *exporttype, const std::string modulename = "") -> std::string {
+    std::string str;
+    auto name = ::wasm_exporttype_name(exporttype);
+    auto externtype = ::wasm_exporttype_type(exporttype);
+    auto externkind = ::wasm_externtype_kind(externtype);
+
+    str += wasm_externkind_to_str(externkind) + " ";
+    str += modulename + "::";
+    str += std::string(name->data, name->size);
+    str += wasm_externtype_to_str(externtype);
+
+    return str;
+}
+
+auto wasm_module_imports_to_str(const wasm_module_t *module) -> std::string {
+    std::string str;
+    wasm_importtype_vec_t imports;
+    ::wasm_module_imports(module, &imports);
+
+    for (size_t index = 0; index < imports.size; index++) {
+        str += fmt::format("{}\n", tss::wasm_importtype_to_str(imports.data[index]));
+    }
+
+    ::wasm_importtype_vec_delete(&imports);
+
+    return str;
+}
+
+auto wasm_module_exports_to_str(const wasm_module_t *module) -> std::string {
+    std::string str;
+    wasm_exporttype_vec_t exports;
+    ::wasm_module_exports(module, &exports);
+
+    for (size_t index = 0; index < exports.size; index++) {
+        str += fmt::format("{}\n", tss::wasm_exporttype_to_str(exports.data[index]));
+    }
+
+    ::wasm_exporttype_vec_delete(&exports);
+
+    return str;
+}
+
+auto wasm_new_populated_imports_vec(wasm_extern_vec_t *out, const wasm_module_t *module, wasm_store_t *store) {
+    wasm_importtype_vec_t imports;
+    ::wasm_module_imports(module, &imports);
+    wasm_extern_vec_new_uninitialized(out, imports.size);
+
+    for (size_t index = 0; index < imports.size; index++) {
+        auto importtype = imports.data[index];
+        auto externtype = ::wasm_importtype_type(importtype);
+        auto externkind = ::wasm_externtype_kind(externtype);
+        switch (externkind) {
+        case WASM_EXTERN_FUNC: {
+            auto functype = ::wasm_externtype_as_functype_const(externtype);
+            auto str = wasm_importtype_to_str(importtype);
+            auto stub = tss::wasi_get_stub_from_str(str);
+            fmt::print("{} {}\n", stub != nullptr, str);
+            wasm_func_t *func = wasm_func_new(store, functype, stub);
+            out->data[index] = wasm_func_as_extern(func);
+
+            break;
+        }
+        case WASM_EXTERN_GLOBAL:
+        case WASM_EXTERN_TABLE:
+        case WASM_EXTERN_MEMORY: {
+            // NOT YET IMPLEMENTED
+            continue;
+        }
+        default: {
+            break;
+        }
+        }
+    }
+
+    ::wasm_importtype_vec_delete(&imports);
+}
 } // namespace tss
 
 int main(int argc, char *argv[]) {
+    // using namespace std::string_view_literals;
+
     std::vector<std::string> cmd_args(argv, argv + argc);
 
     for (auto arg : cmd_args)
         fmt::print("#{}#\n", arg);
 
-    tss::LuaInstance vm;
-    if (vm.get_number("a").okOrDefault(0)) {
-        fmt::print("Lua OK!\n");
-    } else {
-        fmt::print("Lua NOK!\n");
+    // tss::LuaInstance vm;
+    // if (vm.get_number("a").okOrDefault(0)) {
+    //     fmt::print("Lua OK!\n");
+    // } else {
+    //     fmt::print("Lua NOK!\n");
+    // }
+
+    // const char *wat_string = "(module\n"
+    //                          "  (type $sum_t (func (param i32 i32) (result i32)))\n"
+    //                          "  (func $sum_f (type $sum_t) (param $x i32) (param $y i32) (result i32)\n"
+    //                          "    local.get $x\n"
+    //                          "    local.get $y\n"
+    //                          "    i32.add)\n"
+    //                          "  (export \"sum\" (func $sum_f)))";
+
+    // wasm_byte_vec_t wat;
+    // wasm_byte_vec_new(&wat, strlen(wat_string), wat_string);
+    wasm_byte_vec_t wasm_bytes;
+    // wat2wasm(&wat, &wasm_bytes);
+    // wasm_byte_vec_delete(&wat);
+
+    std::ifstream ifs("python.wasm", std::ios::binary | std::ios::ate);
+    if (!ifs) {
+        fmt::print(stderr, "python.wasm: {}\n", std::strerror(errno));
+        return 1;
     }
 
-    const char *wat_string = "(module\n"
-                             "  (type $sum_t (func (param i32 i32) (result i32)))\n"
-                             "  (func $sum_f (type $sum_t) (param $x i32) (param $y i32) (result i32)\n"
-                             "    local.get $x\n"
-                             "    local.get $y\n"
-                             "    i32.add)\n"
-                             "  (export \"sum\" (func $sum_f)))";
+    auto end = ifs.tellg();
+    ifs.seekg(0, std::ios::beg);
 
-    wasm_byte_vec_t wat;
-    wasm_byte_vec_new(&wat, strlen(wat_string), wat_string);
-    wasm_byte_vec_t wasm_bytes;
-    wat2wasm(&wat, &wasm_bytes);
-    wasm_byte_vec_delete(&wat);
+    auto size = std::size_t(end - ifs.tellg());
 
-    printf("Creating the store...\n");
+    if (size == 0) // avoid undefined behavior
+        return {};
+
+    std::vector<char> buffer(size);
+
+    if (!ifs.read(&buffer[0], static_cast<std::streamsize>(buffer.size()))) {
+        fmt::print(stderr, "python.wasm: {}\n", std::strerror(errno));
+        return 1;
+    }
+
+    wasm_byte_vec_new(&wasm_bytes, buffer.size(), &buffer[0]);
+
+    fmt::print("Read wasm file of size {}\n", wasm_bytes.size);
+
+    fmt::print("Creating the store...\n");
     wasm_engine_t *engine = wasm_engine_new();
     wasm_store_t *store = wasm_store_new(engine);
 
-    printf("Compiling module...\n");
+    fmt::print("Compiling module...\n");
     wasm_module_t *module = wasm_module_new(store, &wasm_bytes);
 
     if (!module) {
-        printf("> Error compiling module!\n");
+        fmt::print(stderr, "> Error compiling module!\n");
+        wasm_module_delete(module);
+        wasm_store_delete(store);
+        wasm_engine_delete(engine);
         return 1;
     }
 
     wasm_byte_vec_delete(&wasm_bytes);
+    buffer.clear();
 
-    printf("Creating imports...\n");
-    wasm_extern_vec_t import_object = WASM_EMPTY_VEC;
+    fmt::print("{}", tss::wasm_module_imports_to_str(module));
 
-    printf("Instantiating module...\n");
-    wasm_instance_t *instance = wasm_instance_new(store, module, &import_object, NULL);
+    fmt::print("Creating imports...\n");
+    // // wasm_functype_t *host_func_type = wasm_functype_new_0_1(wasm_valtype_new_i32());
+    // wasm_functype_t *host_func_type = wasm_functype_new_0_0();
+    // wasm_func_t *host_func = wasm_func_new(store, host_func_type, tss::wasi_args_get_stub);
+    // // wasm_func_get_host_info(host_func);
+    // wasm_functype_delete(host_func_type);
+
+    // wasm_extern_t *externs[] = {wasm_func_as_extern(host_func)};
+
+    wasm_extern_vec_t imports;
+    tss::wasm_new_populated_imports_vec(&imports, module, store);
+    // wasm_extern_vec_new(&imports, ARRLEN(externs), externs);
+    // wasm_extern_vec_t imports = WASM_ARRAY_VEC(externs);
+    // wasm_extern_vec_t imports = WASM_EMPTY_VEC;
+
+    fmt::print("Instantiating module...\n");
+    wasm_instance_t *instance = wasm_instance_new(store, module, &imports, NULL);
+
+    wasm_extern_vec_delete(&imports);
 
     if (!instance) {
-        printf("> Error instantiating module!\n");
+        fmt::print(stderr, "> Error instantiating module!\n");
+        wasm_module_delete(module);
+        wasm_instance_delete(instance);
+        wasm_store_delete(store);
+        wasm_engine_delete(engine);
         return 1;
     }
 
-    printf("Retrieving exports...\n");
+    fmt::print("{}", tss::wasm_module_exports_to_str(module));
+
+    fmt::print("Retrieving exports...\n");
     wasm_extern_vec_t exports;
     wasm_instance_exports(instance, &exports);
 
     if (exports.size == 0) {
-        printf("> Error accessing exports!\n");
+        fmt::print(stderr, "> Error accessing exports!\n");
+        wasm_module_delete(module);
+        wasm_extern_vec_delete(&exports);
+        wasm_instance_delete(instance);
+        wasm_store_delete(store);
+        wasm_engine_delete(engine);
         return 1;
     }
 
-    printf("Retrieving the `sum` function...\n");
-    wasm_func_t *sum_func = wasm_extern_as_func(exports.data[0]);
+    fmt::print("Retrieving the `_start` function...\n");
+    wasm_func_t *start_func = wasm_extern_as_func(exports.data[1]);
 
-    if (sum_func == NULL) {
-        printf("> Failed to get the `sum` function!\n");
+    if (start_func == NULL) {
+        fmt::print("> Failed to get the `_start` function!\n");
+        wasm_module_delete(module);
+        wasm_extern_vec_delete(&exports);
+        wasm_instance_delete(instance);
+        wasm_store_delete(store);
+        wasm_engine_delete(engine);
         return 1;
     }
 
-    printf("Calling `sum` function...\n");
-    wasm_val_t args_val[2] = {WASM_I32_VAL(3), WASM_I32_VAL(4)};
-    wasm_val_t results_val[1] = {WASM_INIT_VAL};
-    wasm_val_vec_t args = WASM_ARRAY_VEC(args_val);
-    wasm_val_vec_t results = WASM_ARRAY_VEC(results_val);
+    fmt::print("Calling `_start` function...\n");
+    // wasm_val_t args_val[2] = {WASM_I32_VAL(3), WASM_I32_VAL(4)};
+    // wasm_val_t results_val[1] = {WASM_INIT_VAL};
+    // wasm_val_vec_t args = WASM_ARRAY_VEC(args_val);
+    // wasm_val_vec_t results = WASM_ARRAY_VEC(results_val);
 
-    if (wasm_func_call(sum_func, &args, &results)) {
-        printf("> Error calling the `sum` function!\n");
+    // if (wasm_func_call(start_func, &args, &results)) {
+    if (wasm_func_call(start_func, nullptr, nullptr)) {
+        fmt::print(stderr, "> Error calling the `_start` function!\n");
 
+        wasm_module_delete(module);
+        wasm_extern_vec_delete(&exports);
+        wasm_instance_delete(instance);
+        wasm_store_delete(store);
+        wasm_engine_delete(engine);
         return 1;
     }
 
-    printf("Results of `sum`: %d\n", results_val[0].of.i32);
+    fmt::print("Done!\n");
+    // fmt::print("Results of `sum`: %d\n", results_val[0].of.i32);
 
     wasm_module_delete(module);
     wasm_extern_vec_delete(&exports);

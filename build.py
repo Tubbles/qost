@@ -175,10 +175,10 @@ if __name__ == "__main__":
                 print("".join(ninja_build.readlines()))
 
         with open(str(Path(f"{build_dir}/compile_commands.json")), "w") as compile_commands:
-            subprocess.run(["ninja"] + ninja_args + ["-t", "compdb"], stdout=compile_commands)
+            subprocess.run(["ninja"] + ninja_args + ["-t", "compdb"], stdout=compile_commands).check_returncode()
 
     if build:
-        subprocess.run(["ninja"] + ninja_args + [project])
+        subprocess.run(["ninja"] + ninja_args + [project]).check_returncode()
 
     program = str(Path(f"{build_dir}/{project}"))
     if run:
