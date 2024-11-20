@@ -8,6 +8,7 @@
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+#include <inttypes.h>
 #include <iostream>
 #include <sstream>
 #include <string>

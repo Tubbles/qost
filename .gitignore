@@ -4,3 +4,4 @@ output
 log
 .vscode
 src/modules/wasmer
+python.wasm

@@ -154,32 +154,6 @@ auto wasm_mutability_to_str(wasm_mutability_t mutability) -> std::string {
     }
 }
 
-auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
-    switch (valkind) {
-    case WASM_I32: {
-        return "i32";
-    }
-    case WASM_I64: {
-        return "i64";
-    }
-    case WASM_F32: {
-        return "f32";
-    }
-    case WASM_F64: {
-        return "f64";
-    }
-    case WASM_EXTERNREF: {
-        return "externref";
-    }
-    case WASM_FUNCREF: {
-        return "funcref";
-    }
-    default: {
-        return fmt::format("unknown ({})", valkind);
-    }
-    }
-}
-
 auto wasm_externkind_to_str(wasm_externkind_t externkind) -> std::string {
     switch (externkind) {
     case WASM_EXTERN_FUNC: {
@@ -300,6 +274,22 @@ auto wasm_module_exports_to_str(const wasm_module_t *module) -> std::string {
     return str;
 }
 
+auto wasm_frame_to_str(const wasm_frame_t *frame) -> std::string {
+    std::string str;
+
+    if (frame) {
+        str += fmt::format("{} @ {:#08x} = {}.{:#08x}",
+                           static_cast<void *>(::wasm_frame_instance(frame)),
+                           ::wasm_frame_module_offset(frame),
+                           ::wasm_frame_func_index(frame),
+                           ::wasm_frame_func_offset(frame));
+    } else {
+        str += fmt::format("{}", static_cast<const void *>(frame));
+    }
+
+    return str;
+}
+
 auto wasm_new_populated_imports_vec(wasm_extern_vec_t *out, const wasm_module_t *module, wasm_store_t *store) {
     wasm_importtype_vec_t imports;
     ::wasm_module_imports(module, &imports);
@@ -323,7 +313,7 @@ auto wasm_new_populated_imports_vec(wasm_extern_vec_t *out, const wasm_module_t 
         case WASM_EXTERN_GLOBAL:
         case WASM_EXTERN_TABLE:
         case WASM_EXTERN_MEMORY: {
-            // NOT YET IMPLEMENTED
+            fmt::print(stderr, "Warning: Unsupported import: {}\n", externkind);
             continue;
         }
         default: {
@@ -426,12 +416,16 @@ int main(int argc, char *argv[]) {
     // wasm_extern_vec_t imports = WASM_EMPTY_VEC;
 
     fmt::print("Instantiating module...\n");
-    wasm_instance_t *instance = wasm_instance_new(store, module, &imports, NULL);
+    wasm_trap_t *trap = NULL;
+    wasm_instance_t *instance = wasm_instance_new(store, module, &imports, &trap);
 
     wasm_extern_vec_delete(&imports);
 
-    if (!instance) {
+    if (!instance || trap) {
         fmt::print(stderr, "> Error instantiating module!\n");
+        if (trap) {
+            fmt::print(stderr, "> Trap detected\n");
+        }
         wasm_module_delete(module);
         wasm_instance_delete(instance);
         wasm_store_delete(store);
@@ -444,6 +438,7 @@ int main(int argc, char *argv[]) {
     fmt::print("Retrieving exports...\n");
     wasm_extern_vec_t exports;
     wasm_instance_exports(instance, &exports);
+    fmt::print("Num exports found: {}\n", exports.size);
 
     if (exports.size == 0) {
         fmt::print(stderr, "> Error accessing exports!\n");
@@ -473,11 +468,29 @@ int main(int argc, char *argv[]) {
     // wasm_val_t results_val[1] = {WASM_INIT_VAL};
     // wasm_val_vec_t args = WASM_ARRAY_VEC(args_val);
     // wasm_val_vec_t results = WASM_ARRAY_VEC(results_val);
+    wasm_val_vec_t args = WASM_EMPTY_VEC;
+    wasm_val_vec_t results = WASM_EMPTY_VEC;
 
-    // if (wasm_func_call(start_func, &args, &results)) {
-    if (wasm_func_call(start_func, nullptr, nullptr)) {
-        fmt::print(stderr, "> Error calling the `_start` function!\n");
+    // if (wasm_func_call(start_func, nullptr, nullptr)) {
+    trap = wasm_func_call(start_func, &args, &results);
+    if (trap) {
+        wasm_message_t message;
+        wasm_trap_message(trap, &message);
+        fmt::print(stderr, "> Error calling the `_start` function: {}\n", &message.data[0]);
+        wasm_name_delete(&message);
 
+        auto frame = wasm_trap_origin(trap);
+        if (frame) {
+            fmt::print(stderr, "> origin: {}\n", tss::wasm_frame_to_str(frame));
+        }
+
+        wasm_frame_vec_t frame_vec;
+        wasm_trap_trace(trap, &frame_vec);
+        for (size_t index = 0; index < frame_vec.size; index++) {
+            fmt::print(stderr, "> frame {}: {}\n", index, tss::wasm_frame_to_str(frame_vec.data[index]));
+        }
+
+        wasm_trap_delete(trap);
         wasm_module_delete(module);
         wasm_extern_vec_delete(&exports);
         wasm_instance_delete(instance);

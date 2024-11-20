@@ -1366,297 +1366,612 @@ static_assert(alignof(__wasi_prestat_t) == 4, "witx calculated align");
 // clang-format on
 
 namespace tss {
+auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
+    switch (valkind) {
+    case WASM_I32: {
+        return "i32";
+    }
+    case WASM_I64: {
+        return "i64";
+    }
+    case WASM_F32: {
+        return "f32";
+    }
+    case WASM_F64: {
+        return "f64";
+    }
+    case WASM_EXTERNREF: {
+        return "externref";
+    }
+    case WASM_FUNCREF: {
+        return "funcref";
+    }
+    default: {
+        return fmt::format("unknown ({})", valkind);
+    }
+    }
+}
+
+inline auto wasm_val_to_str(wasm_val_t val) {
+    std::string str;
+
+    switch (val.kind) {
+    case WASM_I32: {
+        str += fmt::format("{:#Lx}:i32", val.of.i32);
+        break;
+    }
+    case WASM_I64: {
+        str += fmt::format("{:#Lx}:i64", val.of.i64);
+        break;
+    }
+    case WASM_F32: {
+        str += fmt::format("{}:f32", val.of.f32);
+        break;
+    }
+    case WASM_F64: {
+        str += fmt::format("{}:f64", val.of.f64);
+        break;
+    }
+    case WASM_EXTERNREF: {
+        str += fmt::format("{}:externref", static_cast<void *>(val.of.ref));
+        break;
+    }
+    case WASM_FUNCREF: {
+        str += fmt::format("{}:funcref", static_cast<void *>(val.of.ref));
+        break;
+    }
+    }
+
+    return str;
+}
+
+inline auto wasm_val_vec_to_str(const wasm_val_vec_t *vals) -> std::string {
+    std::string str;
+
+    for (size_t index = 0; index < vals->size; index++) {
+        str += wasm_val_to_str(vals->data[index]);
+        if (index != vals->size - 1)
+            str += ", ";
+    }
+
+    return str;
+}
+
 inline auto wasi_args_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_args_sizes_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_environ_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_environ_sizes_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_clock_res_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_clock_time_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_advise_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_close_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_datasync_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_fdstat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_fdstat_set_flags_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_filestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_filestat_set_size_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_filestat_set_times_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_pread_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_prestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_prestat_dir_name_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_pwrite_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_read_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_readdir_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_seek_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_sync_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_tell_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_fd_write_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_create_directory_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_filestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_filestat_set_times_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_link_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_open_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_readlink_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_remove_directory_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_rename_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_symlink_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_path_unlink_file_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_poll_oneoff_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_proc_exit_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_sched_yield_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_random_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_sock_accept_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_sock_recv_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_sock_send_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
 inline auto wasi_sock_shutdown_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    UNUSED(args);
-    UNUSED(results);
-    fmt::print("func called {}\n", __func__);
+    if (results->data[0].kind != WASM_I32) {
+        static bool printed = false;
+        if (!printed) {
+            printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+        }
+        results->data[0].kind = WASM_I32;
+    }
+    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
     return nullptr;
 }
 
