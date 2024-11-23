@@ -1366,7 +1366,10 @@ static_assert(alignof(__wasi_prestat_t) == 4, "witx calculated align");
 // clang-format on
 
 namespace tss {
-auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
+
+inline wasm_store_t *g_store = nullptr;
+
+inline auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
     switch (valkind) {
     case WASM_I32: {
         return "i32";
@@ -1642,6 +1645,13 @@ inline auto wasi_fd_prestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t 
         results->data[0].kind = WASM_I32;
     }
     fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
+    if (args->data[0].of.i32 > 100) {
+        wasm_message_t message;
+        wasm_name_new_from_string_nt(&message, "callback abort");
+        wasm_trap_t *trap = wasm_trap_new(g_store, &message);
+        wasm_name_delete(&message);
+        return trap;
+    }
     return nullptr;
 }
 
@@ -1655,6 +1665,13 @@ inline auto wasi_fd_prestat_dir_name_stub(const wasm_val_vec_t *args, wasm_val_v
         results->data[0].kind = WASM_I32;
     }
     fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
+    if (args->data[0].of.i32 > 100) {
+        wasm_name_t message;
+        wasm_name_new_from_string_nt(&message, "callback abort");
+        wasm_trap_t *trap = wasm_trap_new(g_store, &message);
+        wasm_name_delete(&message);
+        return trap;
+    }
     return nullptr;
 }
 

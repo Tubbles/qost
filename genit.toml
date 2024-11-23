@@ -5,7 +5,6 @@ doctest = "{modules}/doctest"
 fmt = "{modules}/fmt"
 lua = "{modules}/lua"
 wasmer = "{modules}/wasmer/wasmer-linux-amd64"
-# wren = "{modules}/wren"
 common_compile_flags = [
     "-fdiagnostics-color=always",
     "-flto",
@@ -35,10 +34,9 @@ common_compile_flags = [
     "-I {fmt}/include",
     "-I {lua}",
     "-I {wasmer}/include",
-    # "-I {wren}/src/include",
 ]
 common_c_flags = [
-    "--std=c17",
+    "--std=c23",
     "{common_compile_flags}",
     #
 ]
@@ -53,8 +51,6 @@ common_ld_flags = [
     "-fdiagnostics-color=always",
     "-flto",
 
-    # "-L {wren}/lib",
-    # "-l:libwren.a",
     "-L {lua}",
     "-l:liblua.a",
     "-L {fmt}/build",
@@ -64,7 +60,7 @@ common_ld_flags = [
     #
 ]
 
-[profile.debug]
+[profile.debug.variable]
 cflags = [
     "-Og",
     "-g",
@@ -88,7 +84,7 @@ ldflags = [
     #
 ]
 
-[profile.optimized]
+[profile.optimized.variable]
 cflags = [
     "-s",
     "-O3",
@@ -107,20 +103,33 @@ ldflags = [
     "{common_ld_flags}",
     #
 ]
+
+[rule.cc]
+command = "g++ -MD -MF {out}.d {cflags} -c -o {out} {in}"
+depfile = "{out}.d"
+deps = "gcc"
+
+[rule.cxx]
+command = "g++ -MD -MF {out}.d {cxxflags} -c -o {out} {in}"
+depfile = "{out}.d"
+deps = "gcc"
+
+[rule.ld]
+command = "g++ -o {out} {in} {ldflags}" # Flag ordering here is important for ld
 
 [binary."quest-on-saer-tor"]
+rule = "ld"
 dependencies = [
-    "{src}/main.cc",
-    #
+    { rule = "cxx", files = [
+        "{src}/main.cc",
+        #
+    ] },
 ]
 implicit_dependencies = [
-    # "{wren}/lib/libwren.a",
-    "{lua}/liblua.a",
-    "{fmt}/build/libfmt.a",
-    "{wasmer}/lib/libwasmer.a",
-    #
-]
-precompiled_headers = [
-    "{src}/inc.hh",
-    #
+    { files = [
+        "{lua}/liblua.a",
+        "{fmt}/build/libfmt.a",
+        "{wasmer}/lib/libwasmer.a",
+        #
+    ] },
 ]

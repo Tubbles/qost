@@ -383,6 +383,7 @@ int main(int argc, char *argv[]) {
     fmt::print("Creating the store...\n");
     wasm_engine_t *engine = wasm_engine_new();
     wasm_store_t *store = wasm_store_new(engine);
+    tss::g_store = store;
 
     fmt::print("Compiling module...\n");
     wasm_module_t *module = wasm_module_new(store, &wasm_bytes);
@@ -482,6 +483,8 @@ int main(int argc, char *argv[]) {
         auto frame = wasm_trap_origin(trap);
         if (frame) {
             fmt::print(stderr, "> origin: {}\n", tss::wasm_frame_to_str(frame));
+        } else {
+            fmt::print(stderr, "> no origin frame\n");
         }
 
         wasm_frame_vec_t frame_vec;
