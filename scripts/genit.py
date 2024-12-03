@@ -19,14 +19,6 @@ def append_file_ext_if_exists(path: str, file_exts: dict[str, list[str]]) -> str
     return f"{path}"
 
 
-def append_to_variable_dict(to_add: dict[str, str | list], variables: dict[str, str]):
-    for variable_key, variable_value in to_add.items():
-        var = variable_value
-        if type(var) == list:
-            var = " ".join(variable_value)
-        variables[variable_key] = var
-
-
 def replace_from_variable_dict(string_in: str, variables: dict[str, str]) -> str:
     string_out = string_in
     match_found = True
@@ -39,6 +31,15 @@ def replace_from_variable_dict(string_in: str, variables: dict[str, str]) -> str
                 match_found = True  # Take another go around so we can nest variables
 
     return string_out
+
+
+def append_to_variable_dict(to_add: dict[str, str | list], variables: dict[str, str]):
+    for variable_key, variable_value in to_add.items():
+        var = variable_value
+        if type(var) == list:
+            var = " ".join(variable_value)
+        # var = replace_from_variable_dict(var, variables)
+        variables[variable_key] = var
 
 
 def parse_file_list_with_rules(ninja_db, variables, rules_paths_list, build_key, dep_key=None):
@@ -119,15 +120,20 @@ def main(
     if profile_db["variable"]:
         append_to_variable_dict(profile_db["variable"], variables)
 
-    rule_db = settings_db["rule"]
+    pool_db = settings_db["pool"] if "pool" in settings_db else {}
+    rule_db = settings_db["rule"] if "rule" in settings_db else {}
 
     if verbose:
         pprint(variables)
         pprint(profile_db)
+        pprint(pool_db)
         pprint(rule_db)
 
     build_script_file = open(output, "w")
     nw = NinjaWriter(build_script_file, width=120)
+
+    for pool_key, pool_val in pool_db.items():
+        nw.pool(pool_key, pool_val["depth"])
 
     # Set up some common variables and rules
     for rule_key, rule_val in rule_db.items():
@@ -140,7 +146,8 @@ def main(
 
     all_binaries = []
     for binary_key, binary_val in settings_db["binary"].items():
-        all_binaries += [binary_key]
+        binary_name = replace_from_variable_dict(binary_key, variables)
+        all_binaries += [binary_name]
         ninja_db = {
             "deps": [],
             "implicit_deps": [],
@@ -160,7 +167,7 @@ def main(
         if verbose:
             pprint(ninja_db)
 
-        nw.build(binary_key, binary_val["rule"], ninja_db["deps"], implicit=ninja_db["implicit_deps"])
+        nw.build(binary_name, binary_val["rule"], ninja_db["deps"], implicit=ninja_db["implicit_deps"])
 
         for entry in ninja_db["intermediate_builds"]:
             nw.build(entry["output"], entry["rule"], entry["input"])
@@ -171,7 +178,7 @@ def main(
 
         if len(all_binaries) == 1:
             # Mark the first binary as the default one
-            nw.default(binary_key)
+            nw.default(binary_name)
 
     # Create rules and builds to automatically regenerate the build.ninja
     equivalent_commandline = [

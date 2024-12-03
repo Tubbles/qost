@@ -25,8 +25,6 @@ if [[ " ${args[*]} " =~ [[:space:]]"--test"[[:space:]] ]]; then
     test=true
 fi
 
-git -C "${root_dir}" submodule update --init --recursive
-
 make_args=(
     "--no-print-directory"
     "-O"
@@ -37,96 +35,93 @@ if [[ ${verbose} == false ]]; then
     make_args+=("-s")
 fi
 
-module="doctest"
-if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
-    (
-        echo "${module}: nothing to build"
-    )
-fi
+setup_module() {
+    module="$1"
 
-module="fmt"
-if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
-    (
+    if [[ " ${args[*]} " =~ ${module} ]]; then
         echo "Setting up ${module}"
         cd "${modules_dir}/${module}"
-        if [[ ${pristine} == true ]]; then
-            rm -fr "build"
+        git -C "$(pwd)" submodule update --init --recursive
+
+        if [[ "${module}" == "doctest" ]]; then
+            (
+                echo "${module}: nothing to build"
+            )
         fi
 
-        if [[ ! -d "build" ]]; then
-            mkdir -p "build"
-            step cmake -B "build"
+        if [[ "${module}" == "fmt" ]]; then
+            (
+                if [[ ${pristine} == true ]]; then
+                    rm -fr "build"
+                fi
+
+                if [[ ! -d "build" ]]; then
+                    mkdir -p "build"
+                    step cmake -B "build"
+                fi
+
+                step make -C "build" "${make_args[@]}"
+
+                if [[ ${test} == true ]]; then
+                    step make -C "build" "${make_args[@]}" test
+                fi
+            )
         fi
 
-        step make -C "build" "${make_args[@]}"
+        if [[ "${module}" == "lua" ]]; then
+            (
+                if [[ ${pristine} == true ]]; then
+                    step make clean
+                fi
 
-        if [[ ${test} == true ]]; then
-            step make -C "build" "${make_args[@]}" test
-        fi
-    )
-fi
+                echo "Building ${module}"
+                step make "${make_args[@]}"
+                echo "Building ${module} done"
 
-module="lua"
-if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
-    (
-        echo "Setting up ${module}"
-        cd "${modules_dir}/${module}"
-        if [[ ${pristine} == true ]]; then
-            step make clean
-        fi
+                if [[ ${test} == true ]]; then
+                    cd testes/libs
+                    step make "${make_args[@]}"
+                    cd "${modules_dir}/${module}"
 
-        echo "Building ${module}"
-        step make "${make_args[@]}"
-        echo "Building ${module} done"
-
-        if [[ ${test} == true ]]; then
-            cd testes/libs
-            step make "${make_args[@]}"
-            cd "${modules_dir}/${module}"
-
-            step bash ./all | tee log
-            result="$(tail -n3 log | head -n 1 | tr -d '\r')"
-            rm log
-            if [[ "${result}" != "    final OK!!!!" ]]; then false; fi
-        fi
-    )
-fi
-
-module="wasmer"
-if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
-    (
-        echo "Setting up ${module}"
-        mkdir -p "${modules_dir}/${module}"
-        cd "${modules_dir}/${module}"
-
-        if [[ ${pristine} == true ]]; then
-            rm -fr wasmer-linux-amd64*
+                    step bash ./all | tee log
+                    result="$(tail -n3 log | head -n 1 | tr -d '\r')"
+                    rm log
+                    if [[ "${result}" != "    final OK!!!!" ]]; then false; fi
+                fi
+            )
         fi
 
-        if [[ ! -d "wasmer-linux-amd64" ]]; then
-            if [[ ! -r "wasmer-linux-amd64.tar.gz" ]]; then
-                wget https://github.com/wasmerio/wasmer/releases/download/v5.0.1/wasmer-linux-amd64.tar.gz
-            fi
-            mkdir -p wasmer-linux-amd64
-            tar -C wasmer-linux-amd64/ -zxvf wasmer-linux-amd64.tar.gz
-        fi
-    )
-fi
-
-module="wren"
-if [[ " ${args[*]} " =~ [[:space:]]${module}[[:space:]] ]]; then
-    (
-        echo "Setting up ${module}"
-        cd "${modules_dir}/${module}"
-        if [[ ${pristine} == true ]]; then
-            step make -C projects/make clean
+        if [[ "${module}" == "magic_enum" ]]; then
+            (
+                echo "${module}: nothing to build"
+            )
         fi
 
-        step make -C projects/make "${make_args[@]}"
+        if [[ "${module}" == "wasmer" ]]; then
+            (
+                echo "Setting up ${module}"
+                mkdir -p "${modules_dir}/${module}"
+                cd "${modules_dir}/${module}"
 
-        if [[ ${test} == true ]]; then
-            :
-            # step python3 "util/test.py"
+                if [[ ${pristine} == true ]]; then
+                    rm -fr wasmer-linux-amd64*
+                fi
+
+                if [[ ! -d "wasmer-linux-amd64" ]]; then
+                    if [[ ! -r "wasmer-linux-amd64.tar.gz" ]]; then
+                        wget https://github.com/wasmerio/wasmer/releases/download/v5.0.1/wasmer-linux-amd64.tar.gz
+                    fi
+                    mkdir -p wasmer-linux-amd64
+                    tar -C wasmer-linux-amd64/ -zxvf wasmer-linux-amd64.tar.gz
+                fi
+            )
         fi
-    )
-fi
+
+    fi
+}
+
+setup_module "doctest"
+setup_module "fmt"
+setup_module "lua"
+setup_module "magic_enum"
+setup_module "wasmer"

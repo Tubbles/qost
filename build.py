@@ -5,8 +5,8 @@ available_modules = [
     "doctest",
     "fmt",
     "lua",
+    "magic_enum",
     "wasmer",
-    "wren",
 ]
 
 available_modules_help_text = f"""Optionally takes zero or more module names to operate on (defaults to all, in any order):\n\
@@ -58,15 +58,15 @@ if __name__ == "__main__":
     import subprocess
     import sys
 
-    sys.path.insert(0, "scripts")
-    import genit
-
     my_path_obj = Path(inspect.getsourcefile(lambda: 0)).absolute()
     my_path = str(my_path_obj)
     my_name = my_path_obj.name
     git_repo = git.Repo(my_path, search_parent_directories=True)
     root = git_repo.git.rev_parse("--show-toplevel")
     project = "quest-on-saer-tor"
+
+    sys.path.insert(0, str(Path(f"{root}/scripts").absolute()))
+    import genit
 
     parser = argparse.ArgumentParser(
         prog=my_name,
@@ -177,10 +177,10 @@ if __name__ == "__main__":
         with open(str(Path(f"{build_dir}/compile_commands.json")), "w") as compile_commands:
             subprocess.run(["ninja"] + ninja_args + ["-t", "compdb"], stdout=compile_commands).check_returncode()
 
-    if build:
-        subprocess.run(["ninja"] + ninja_args + [project]).check_returncode()
-
     program = str(Path(f"{build_dir}/{project}"))
+    if build:
+        subprocess.run(["ninja"] + ninja_args + [program]).check_returncode()
+
     if run:
         if verbose:
             print(f"Running project {program}")

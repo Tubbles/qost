@@ -2,1372 +2,13 @@
 
 #include "inc.hh"
 
-// #define UNUSED(x) ((void)x)
-
-// clang-format off
-
-static_assert(alignof(int8_t) == 1, "non-wasi data layout");
-static_assert(alignof(uint8_t) == 1, "non-wasi data layout");
-static_assert(alignof(int16_t) == 2, "non-wasi data layout");
-static_assert(alignof(uint16_t) == 2, "non-wasi data layout");
-static_assert(alignof(int32_t) == 4, "non-wasi data layout");
-static_assert(alignof(uint32_t) == 4, "non-wasi data layout");
-static_assert(alignof(int64_t) == 8, "non-wasi data layout");
-static_assert(alignof(uint64_t) == 8, "non-wasi data layout");
-// static_assert(alignof(void*) == 4, "non-wasi data layout");
-
-#define __WASI_DIRCOOKIE_START (UINT64_C(0))
-typedef uint32_t __wasi_size_t;
-
-static_assert(sizeof(__wasi_size_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_size_t) == 4, "witx calculated align");
-
-/**
- * Non-negative file size or length of a region within a file.
- */
-typedef uint64_t __wasi_filesize_t;
-
-static_assert(sizeof(__wasi_filesize_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_filesize_t) == 8, "witx calculated align");
-
-/**
- * Timestamp in nanoseconds.
- */
-typedef uint64_t __wasi_timestamp_t;
-
-static_assert(sizeof(__wasi_timestamp_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_timestamp_t) == 8, "witx calculated align");
-
-/**
- * Identifiers for clocks.
- */
-typedef uint32_t __wasi_clockid_t;
-
-/**
- * The clock measuring real time. Time value zero corresponds with
- * 1970-01-01T00:00:00Z.
- */
-#define __WASI_CLOCKID_REALTIME (UINT32_C(0))
-
-/**
- * The store-wide monotonic clock, which is defined as a clock measuring
- * real time, whose value cannot be adjusted and which cannot have negative
- * clock jumps. The epoch of this clock is undefined. The absolute time
- * value of this clock therefore has no meaning.
- */
-#define __WASI_CLOCKID_MONOTONIC (UINT32_C(1))
-
-/**
- * The CPU-time clock associated with the current process.
- */
-#define __WASI_CLOCKID_PROCESS_CPUTIME_ID (UINT32_C(2))
-
-/**
- * The CPU-time clock associated with the current thread.
- */
-#define __WASI_CLOCKID_THREAD_CPUTIME_ID (UINT32_C(3))
-
-static_assert(sizeof(__wasi_clockid_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_clockid_t) == 4, "witx calculated align");
-
-/**
- * Error codes returned by functions.
- * Not all of these error codes are returned by the functions provided by this
- * API; some are used in higher-level library layers, and others are provided
- * merely for alignment with POSIX.
- */
-typedef uint16_t __wasi_errno_t;
-
-/**
- * No error occurred. System call completed successfully.
- */
-#define __WASI_ERRNO_SUCCESS (UINT16_C(0))
-
-/**
- * Argument list too long.
- */
-#define __WASI_ERRNO_2BIG (UINT16_C(1))
-
-/**
- * Permission denied.
- */
-#define __WASI_ERRNO_ACCES (UINT16_C(2))
-
-/**
- * Address in use.
- */
-#define __WASI_ERRNO_ADDRINUSE (UINT16_C(3))
-
-/**
- * Address not available.
- */
-#define __WASI_ERRNO_ADDRNOTAVAIL (UINT16_C(4))
-
-/**
- * Address family not supported.
- */
-#define __WASI_ERRNO_AFNOSUPPORT (UINT16_C(5))
-
-/**
- * Resource unavailable, or operation would block.
- */
-#define __WASI_ERRNO_AGAIN (UINT16_C(6))
-
-/**
- * Connection already in progress.
- */
-#define __WASI_ERRNO_ALREADY (UINT16_C(7))
-
-/**
- * Bad file descriptor.
- */
-#define __WASI_ERRNO_BADF (UINT16_C(8))
-
-/**
- * Bad message.
- */
-#define __WASI_ERRNO_BADMSG (UINT16_C(9))
-
-/**
- * Device or resource busy.
- */
-#define __WASI_ERRNO_BUSY (UINT16_C(10))
-
-/**
- * Operation canceled.
- */
-#define __WASI_ERRNO_CANCELED (UINT16_C(11))
-
-/**
- * No child processes.
- */
-#define __WASI_ERRNO_CHILD (UINT16_C(12))
-
-/**
- * Connection aborted.
- */
-#define __WASI_ERRNO_CONNABORTED (UINT16_C(13))
-
-/**
- * Connection refused.
- */
-#define __WASI_ERRNO_CONNREFUSED (UINT16_C(14))
-
-/**
- * Connection reset.
- */
-#define __WASI_ERRNO_CONNRESET (UINT16_C(15))
-
-/**
- * Resource deadlock would occur.
- */
-#define __WASI_ERRNO_DEADLK (UINT16_C(16))
-
-/**
- * Destination address required.
- */
-#define __WASI_ERRNO_DESTADDRREQ (UINT16_C(17))
-
-/**
- * Mathematics argument out of domain of function.
- */
-#define __WASI_ERRNO_DOM (UINT16_C(18))
-
-/**
- * Reserved.
- */
-#define __WASI_ERRNO_DQUOT (UINT16_C(19))
-
-/**
- * File exists.
- */
-#define __WASI_ERRNO_EXIST (UINT16_C(20))
-
-/**
- * Bad address.
- */
-#define __WASI_ERRNO_FAULT (UINT16_C(21))
-
-/**
- * File too large.
- */
-#define __WASI_ERRNO_FBIG (UINT16_C(22))
-
-/**
- * Host is unreachable.
- */
-#define __WASI_ERRNO_HOSTUNREACH (UINT16_C(23))
-
-/**
- * Identifier removed.
- */
-#define __WASI_ERRNO_IDRM (UINT16_C(24))
-
-/**
- * Illegal byte sequence.
- */
-#define __WASI_ERRNO_ILSEQ (UINT16_C(25))
-
-/**
- * Operation in progress.
- */
-#define __WASI_ERRNO_INPROGRESS (UINT16_C(26))
-
-/**
- * Interrupted function.
- */
-#define __WASI_ERRNO_INTR (UINT16_C(27))
-
-/**
- * Invalid argument.
- */
-#define __WASI_ERRNO_INVAL (UINT16_C(28))
-
-/**
- * I/O error.
- */
-#define __WASI_ERRNO_IO (UINT16_C(29))
-
-/**
- * Socket is connected.
- */
-#define __WASI_ERRNO_ISCONN (UINT16_C(30))
-
-/**
- * Is a directory.
- */
-#define __WASI_ERRNO_ISDIR (UINT16_C(31))
-
-/**
- * Too many levels of symbolic links.
- */
-#define __WASI_ERRNO_LOOP (UINT16_C(32))
-
-/**
- * File descriptor value too large.
- */
-#define __WASI_ERRNO_MFILE (UINT16_C(33))
-
-/**
- * Too many links.
- */
-#define __WASI_ERRNO_MLINK (UINT16_C(34))
-
-/**
- * Message too large.
- */
-#define __WASI_ERRNO_MSGSIZE (UINT16_C(35))
-
-/**
- * Reserved.
- */
-#define __WASI_ERRNO_MULTIHOP (UINT16_C(36))
-
-/**
- * Filename too long.
- */
-#define __WASI_ERRNO_NAMETOOLONG (UINT16_C(37))
-
-/**
- * Network is down.
- */
-#define __WASI_ERRNO_NETDOWN (UINT16_C(38))
-
-/**
- * Connection aborted by network.
- */
-#define __WASI_ERRNO_NETRESET (UINT16_C(39))
-
-/**
- * Network unreachable.
- */
-#define __WASI_ERRNO_NETUNREACH (UINT16_C(40))
-
-/**
- * Too many files open in system.
- */
-#define __WASI_ERRNO_NFILE (UINT16_C(41))
-
-/**
- * No buffer space available.
- */
-#define __WASI_ERRNO_NOBUFS (UINT16_C(42))
-
-/**
- * No such device.
- */
-#define __WASI_ERRNO_NODEV (UINT16_C(43))
-
-/**
- * No such file or directory.
- */
-#define __WASI_ERRNO_NOENT (UINT16_C(44))
-
-/**
- * Executable file format error.
- */
-#define __WASI_ERRNO_NOEXEC (UINT16_C(45))
-
-/**
- * No locks available.
- */
-#define __WASI_ERRNO_NOLCK (UINT16_C(46))
-
-/**
- * Reserved.
- */
-#define __WASI_ERRNO_NOLINK (UINT16_C(47))
-
-/**
- * Not enough space.
- */
-#define __WASI_ERRNO_NOMEM (UINT16_C(48))
-
-/**
- * No message of the desired type.
- */
-#define __WASI_ERRNO_NOMSG (UINT16_C(49))
-
-/**
- * Protocol not available.
- */
-#define __WASI_ERRNO_NOPROTOOPT (UINT16_C(50))
-
-/**
- * No space left on device.
- */
-#define __WASI_ERRNO_NOSPC (UINT16_C(51))
-
-/**
- * Function not supported.
- */
-#define __WASI_ERRNO_NOSYS (UINT16_C(52))
-
-/**
- * The socket is not connected.
- */
-#define __WASI_ERRNO_NOTCONN (UINT16_C(53))
-
-/**
- * Not a directory or a symbolic link to a directory.
- */
-#define __WASI_ERRNO_NOTDIR (UINT16_C(54))
-
-/**
- * Directory not empty.
- */
-#define __WASI_ERRNO_NOTEMPTY (UINT16_C(55))
-
-/**
- * State not recoverable.
- */
-#define __WASI_ERRNO_NOTRECOVERABLE (UINT16_C(56))
-
-/**
- * Not a socket.
- */
-#define __WASI_ERRNO_NOTSOCK (UINT16_C(57))
-
-/**
- * Not supported, or operation not supported on socket.
- */
-#define __WASI_ERRNO_NOTSUP (UINT16_C(58))
-
-/**
- * Inappropriate I/O control operation.
- */
-#define __WASI_ERRNO_NOTTY (UINT16_C(59))
-
-/**
- * No such device or address.
- */
-#define __WASI_ERRNO_NXIO (UINT16_C(60))
-
-/**
- * Value too large to be stored in data type.
- */
-#define __WASI_ERRNO_OVERFLOW (UINT16_C(61))
-
-/**
- * Previous owner died.
- */
-#define __WASI_ERRNO_OWNERDEAD (UINT16_C(62))
-
-/**
- * Operation not permitted.
- */
-#define __WASI_ERRNO_PERM (UINT16_C(63))
-
-/**
- * Broken pipe.
- */
-#define __WASI_ERRNO_PIPE (UINT16_C(64))
-
-/**
- * Protocol error.
- */
-#define __WASI_ERRNO_PROTO (UINT16_C(65))
-
-/**
- * Protocol not supported.
- */
-#define __WASI_ERRNO_PROTONOSUPPORT (UINT16_C(66))
-
-/**
- * Protocol wrong type for socket.
- */
-#define __WASI_ERRNO_PROTOTYPE (UINT16_C(67))
-
-/**
- * Result too large.
- */
-#define __WASI_ERRNO_RANGE (UINT16_C(68))
-
-/**
- * Read-only file system.
- */
-#define __WASI_ERRNO_ROFS (UINT16_C(69))
-
-/**
- * Invalid seek.
- */
-#define __WASI_ERRNO_SPIPE (UINT16_C(70))
-
-/**
- * No such process.
- */
-#define __WASI_ERRNO_SRCH (UINT16_C(71))
-
-/**
- * Reserved.
- */
-#define __WASI_ERRNO_STALE (UINT16_C(72))
-
-/**
- * Connection timed out.
- */
-#define __WASI_ERRNO_TIMEDOUT (UINT16_C(73))
-
-/**
- * Text file busy.
- */
-#define __WASI_ERRNO_TXTBSY (UINT16_C(74))
-
-/**
- * Cross-device link.
- */
-#define __WASI_ERRNO_XDEV (UINT16_C(75))
-
-/**
- * Extension: Capabilities insufficient.
- */
-#define __WASI_ERRNO_NOTCAPABLE (UINT16_C(76))
-
-static_assert(sizeof(__wasi_errno_t) == 2, "witx calculated size");
-static_assert(alignof(__wasi_errno_t) == 2, "witx calculated align");
-
-/**
- * File descriptor rights, determining which actions may be performed.
- */
-typedef uint64_t __wasi_rights_t;
-
-/**
- * The right to invoke `fd_datasync`.
- * If `path_open` is set, includes the right to invoke
- * `path_open` with `fdflags::dsync`.
- */
-#define __WASI_RIGHTS_FD_DATASYNC ((__wasi_rights_t)(1 << 0))
-
-/**
- * The right to invoke `fd_read` and `sock_recv`.
- * If `rights::fd_seek` is set, includes the right to invoke `fd_pread`.
- */
-#define __WASI_RIGHTS_FD_READ ((__wasi_rights_t)(1 << 1))
-
-/**
- * The right to invoke `fd_seek`. This flag implies `rights::fd_tell`.
- */
-#define __WASI_RIGHTS_FD_SEEK ((__wasi_rights_t)(1 << 2))
-
-/**
- * The right to invoke `fd_fdstat_set_flags`.
- */
-#define __WASI_RIGHTS_FD_FDSTAT_SET_FLAGS ((__wasi_rights_t)(1 << 3))
-
-/**
- * The right to invoke `fd_sync`.
- * If `path_open` is set, includes the right to invoke
- * `path_open` with `fdflags::rsync` and `fdflags::dsync`.
- */
-#define __WASI_RIGHTS_FD_SYNC ((__wasi_rights_t)(1 << 4))
-
-/**
- * The right to invoke `fd_seek` in such a way that the file offset
- * remains unaltered (i.e., `whence::cur` with offset zero), or to
- * invoke `fd_tell`.
- */
-#define __WASI_RIGHTS_FD_TELL ((__wasi_rights_t)(1 << 5))
-
-/**
- * The right to invoke `fd_write` and `sock_send`.
- * If `rights::fd_seek` is set, includes the right to invoke `fd_pwrite`.
- */
-#define __WASI_RIGHTS_FD_WRITE ((__wasi_rights_t)(1 << 6))
-
-/**
- * The right to invoke `fd_advise`.
- */
-#define __WASI_RIGHTS_FD_ADVISE ((__wasi_rights_t)(1 << 7))
-
-/**
- * The right to invoke `fd_allocate`.
- */
-#define __WASI_RIGHTS_FD_ALLOCATE ((__wasi_rights_t)(1 << 8))
-
-/**
- * The right to invoke `path_create_directory`.
- */
-#define __WASI_RIGHTS_PATH_CREATE_DIRECTORY ((__wasi_rights_t)(1 << 9))
-
-/**
- * If `path_open` is set, the right to invoke `path_open` with `oflags::creat`.
- */
-#define __WASI_RIGHTS_PATH_CREATE_FILE ((__wasi_rights_t)(1 << 10))
-
-/**
- * The right to invoke `path_link` with the file descriptor as the
- * source directory.
- */
-#define __WASI_RIGHTS_PATH_LINK_SOURCE ((__wasi_rights_t)(1 << 11))
-
-/**
- * The right to invoke `path_link` with the file descriptor as the
- * target directory.
- */
-#define __WASI_RIGHTS_PATH_LINK_TARGET ((__wasi_rights_t)(1 << 12))
-
-/**
- * The right to invoke `path_open`.
- */
-#define __WASI_RIGHTS_PATH_OPEN ((__wasi_rights_t)(1 << 13))
-
-/**
- * The right to invoke `fd_readdir`.
- */
-#define __WASI_RIGHTS_FD_READDIR ((__wasi_rights_t)(1 << 14))
-
-/**
- * The right to invoke `path_readlink`.
- */
-#define __WASI_RIGHTS_PATH_READLINK ((__wasi_rights_t)(1 << 15))
-
-/**
- * The right to invoke `path_rename` with the file descriptor as the source directory.
- */
-#define __WASI_RIGHTS_PATH_RENAME_SOURCE ((__wasi_rights_t)(1 << 16))
-
-/**
- * The right to invoke `path_rename` with the file descriptor as the target directory.
- */
-#define __WASI_RIGHTS_PATH_RENAME_TARGET ((__wasi_rights_t)(1 << 17))
-
-/**
- * The right to invoke `path_filestat_get`.
- */
-#define __WASI_RIGHTS_PATH_FILESTAT_GET ((__wasi_rights_t)(1 << 18))
-
-/**
- * The right to change a file's size (there is no `path_filestat_set_size`).
- * If `path_open` is set, includes the right to invoke `path_open` with `oflags::trunc`.
- */
-#define __WASI_RIGHTS_PATH_FILESTAT_SET_SIZE ((__wasi_rights_t)(1 << 19))
-
-/**
- * The right to invoke `path_filestat_set_times`.
- */
-#define __WASI_RIGHTS_PATH_FILESTAT_SET_TIMES ((__wasi_rights_t)(1 << 20))
-
-/**
- * The right to invoke `fd_filestat_get`.
- */
-#define __WASI_RIGHTS_FD_FILESTAT_GET ((__wasi_rights_t)(1 << 21))
-
-/**
- * The right to invoke `fd_filestat_set_size`.
- */
-#define __WASI_RIGHTS_FD_FILESTAT_SET_SIZE ((__wasi_rights_t)(1 << 22))
-
-/**
- * The right to invoke `fd_filestat_set_times`.
- */
-#define __WASI_RIGHTS_FD_FILESTAT_SET_TIMES ((__wasi_rights_t)(1 << 23))
-
-/**
- * The right to invoke `path_symlink`.
- */
-#define __WASI_RIGHTS_PATH_SYMLINK ((__wasi_rights_t)(1 << 24))
-
-/**
- * The right to invoke `path_remove_directory`.
- */
-#define __WASI_RIGHTS_PATH_REMOVE_DIRECTORY ((__wasi_rights_t)(1 << 25))
-
-/**
- * The right to invoke `path_unlink_file`.
- */
-#define __WASI_RIGHTS_PATH_UNLINK_FILE ((__wasi_rights_t)(1 << 26))
-
-/**
- * If `rights::fd_read` is set, includes the right to invoke `poll_oneoff` to subscribe to `eventtype::fd_read`.
- * If `rights::fd_write` is set, includes the right to invoke `poll_oneoff` to subscribe to `eventtype::fd_write`.
- */
-#define __WASI_RIGHTS_POLL_FD_READWRITE ((__wasi_rights_t)(1 << 27))
-
-/**
- * The right to invoke `sock_shutdown`.
- */
-#define __WASI_RIGHTS_SOCK_SHUTDOWN ((__wasi_rights_t)(1 << 28))
-
-/**
- * The right to invoke `sock_accept`.
- */
-#define __WASI_RIGHTS_SOCK_ACCEPT ((__wasi_rights_t)(1 << 29))
-
-/**
- * A file descriptor handle.
- */
-typedef int __wasi_fd_t;
-
-static_assert(sizeof(__wasi_fd_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_fd_t) == 4, "witx calculated align");
-
-// /**
-//  * A region of memory for scatter/gather reads.
-//  */
-// typedef struct __wasi_iovec_t {
-//     /**
-//      * The address of the buffer to be filled.
-//      */
-//     uint8_t * buf;
-
-//     /**
-//      * The length of the buffer to be filled.
-//      */
-//     __wasi_size_t buf_len;
-
-// } __wasi_iovec_t;
-
-// static_assert(sizeof(__wasi_iovec_t) == 8, "witx calculated size");
-// static_assert(alignof(__wasi_iovec_t) == 4, "witx calculated align");
-// static_assert(offsetof(__wasi_iovec_t, buf) == 0, "witx calculated offset");
-// static_assert(offsetof(__wasi_iovec_t, buf_len) == 4, "witx calculated offset");
-
-// /**
-//  * A region of memory for scatter/gather writes.
-//  */
-// typedef struct __wasi_ciovec_t {
-//     /**
-//      * The address of the buffer to be written.
-//      */
-//     const uint8_t * buf;
-
-//     /**
-//      * The length of the buffer to be written.
-//      */
-//     __wasi_size_t buf_len;
-
-// } __wasi_ciovec_t;
-
-// static_assert(sizeof(__wasi_ciovec_t) == 8, "witx calculated size");
-// static_assert(alignof(__wasi_ciovec_t) == 4, "witx calculated align");
-// static_assert(offsetof(__wasi_ciovec_t, buf) == 0, "witx calculated offset");
-// static_assert(offsetof(__wasi_ciovec_t, buf_len) == 4, "witx calculated offset");
-
-/**
- * Relative offset within a file.
- */
-typedef int64_t __wasi_filedelta_t;
-
-static_assert(sizeof(__wasi_filedelta_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_filedelta_t) == 8, "witx calculated align");
-
-/**
- * The position relative to which to set the offset of the file descriptor.
- */
-typedef uint8_t __wasi_whence_t;
-
-/**
- * Seek relative to start-of-file.
- */
-#define __WASI_WHENCE_SET (UINT8_C(0))
-
-/**
- * Seek relative to current position.
- */
-#define __WASI_WHENCE_CUR (UINT8_C(1))
-
-/**
- * Seek relative to end-of-file.
- */
-#define __WASI_WHENCE_END (UINT8_C(2))
-
-static_assert(sizeof(__wasi_whence_t) == 1, "witx calculated size");
-static_assert(alignof(__wasi_whence_t) == 1, "witx calculated align");
-
-/**
- * A reference to the offset of a directory entry.
- *
- * The value 0 signifies the start of the directory.
- */
-typedef uint64_t __wasi_dircookie_t;
-
-static_assert(sizeof(__wasi_dircookie_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_dircookie_t) == 8, "witx calculated align");
-
-/**
- * The type for the `dirent::d_namlen` field of `dirent` struct.
- */
-typedef uint32_t __wasi_dirnamlen_t;
-
-static_assert(sizeof(__wasi_dirnamlen_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_dirnamlen_t) == 4, "witx calculated align");
-
-/**
- * File serial number that is unique within its file system.
- */
-typedef uint64_t __wasi_inode_t;
-
-static_assert(sizeof(__wasi_inode_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_inode_t) == 8, "witx calculated align");
-
-/**
- * The type of a file descriptor or file.
- */
-typedef uint8_t __wasi_filetype_t;
-
-/**
- * The type of the file descriptor or file is unknown or is different from any of the other types specified.
- */
-#define __WASI_FILETYPE_UNKNOWN (UINT8_C(0))
-
-/**
- * The file descriptor or file refers to a block device inode.
- */
-#define __WASI_FILETYPE_BLOCK_DEVICE (UINT8_C(1))
-
-/**
- * The file descriptor or file refers to a character device inode.
- */
-#define __WASI_FILETYPE_CHARACTER_DEVICE (UINT8_C(2))
-
-/**
- * The file descriptor or file refers to a directory inode.
- */
-#define __WASI_FILETYPE_DIRECTORY (UINT8_C(3))
-
-/**
- * The file descriptor or file refers to a regular file inode.
- */
-#define __WASI_FILETYPE_REGULAR_FILE (UINT8_C(4))
-
-/**
- * The file descriptor or file refers to a datagram socket.
- */
-#define __WASI_FILETYPE_SOCKET_DGRAM (UINT8_C(5))
-
-/**
- * The file descriptor or file refers to a byte-stream socket.
- */
-#define __WASI_FILETYPE_SOCKET_STREAM (UINT8_C(6))
-
-/**
- * The file refers to a symbolic link inode.
- */
-#define __WASI_FILETYPE_SYMBOLIC_LINK (UINT8_C(7))
-
-static_assert(sizeof(__wasi_filetype_t) == 1, "witx calculated size");
-static_assert(alignof(__wasi_filetype_t) == 1, "witx calculated align");
-
-/**
- * A directory entry.
- */
-typedef struct __wasi_dirent_t {
-    /**
-     * The offset of the next directory entry stored in this directory.
-     */
-    __wasi_dircookie_t d_next;
-
-    /**
-     * The serial number of the file referred to by this directory entry.
-     */
-    __wasi_inode_t d_ino;
-
-    /**
-     * The length of the name of the directory entry.
-     */
-    __wasi_dirnamlen_t d_namlen;
-
-    /**
-     * The type of the file referred to by this directory entry.
-     */
-    __wasi_filetype_t d_type;
-
-} __wasi_dirent_t;
-
-static_assert(sizeof(__wasi_dirent_t) == 24, "witx calculated size");
-static_assert(alignof(__wasi_dirent_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_dirent_t, d_next) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_dirent_t, d_ino) == 8, "witx calculated offset");
-static_assert(offsetof(__wasi_dirent_t, d_namlen) == 16, "witx calculated offset");
-static_assert(offsetof(__wasi_dirent_t, d_type) == 20, "witx calculated offset");
-
-/**
- * File or memory access pattern advisory information.
- */
-typedef uint8_t __wasi_advice_t;
-
-/**
- * The application has no advice to give on its behavior with respect to the specified data.
- */
-#define __WASI_ADVICE_NORMAL (UINT8_C(0))
-
-/**
- * The application expects to access the specified data sequentially from lower offsets to higher offsets.
- */
-#define __WASI_ADVICE_SEQUENTIAL (UINT8_C(1))
-
-/**
- * The application expects to access the specified data in a random order.
- */
-#define __WASI_ADVICE_RANDOM (UINT8_C(2))
-
-/**
- * The application expects to access the specified data in the near future.
- */
-#define __WASI_ADVICE_WILLNEED (UINT8_C(3))
-
-/**
- * The application expects that it will not access the specified data in the near future.
- */
-#define __WASI_ADVICE_DONTNEED (UINT8_C(4))
-
-/**
- * The application expects to access the specified data once and then not reuse it thereafter.
- */
-#define __WASI_ADVICE_NOREUSE (UINT8_C(5))
-
-static_assert(sizeof(__wasi_advice_t) == 1, "witx calculated size");
-static_assert(alignof(__wasi_advice_t) == 1, "witx calculated align");
-
-/**
- * File descriptor flags.
- */
-typedef __wasi_errno_t __wasi_fdflags_t;
-
-/**
- * Append mode: Data written to the file is always appended to the file's end.
- */
-#define __WASI_FDFLAGS_APPEND ((__wasi_fdflags_t)(1 << 0))
-
-/**
- * Write according to synchronized I/O data integrity completion. Only the data stored in the file is synchronized.
- */
-#define __WASI_FDFLAGS_DSYNC ((__wasi_fdflags_t)(1 << 1))
-
-/**
- * Non-blocking mode.
- */
-#define __WASI_FDFLAGS_NONBLOCK ((__wasi_fdflags_t)(1 << 2))
-
-/**
- * Synchronized read I/O operations.
- */
-#define __WASI_FDFLAGS_RSYNC ((__wasi_fdflags_t)(1 << 3))
-
-/**
- * Write according to synchronized I/O file integrity completion. In
- * addition to synchronizing the data stored in the file, the implementation
- * may also synchronously update the file's metadata.
- */
-#define __WASI_FDFLAGS_SYNC ((__wasi_fdflags_t)(1 << 4))
-
-/**
- * File descriptor attributes.
- */
-typedef struct __wasi_fdstat_t {
-    /**
-     * File type.
-     */
-    __wasi_filetype_t fs_filetype;
-
-    /**
-     * File descriptor flags.
-     */
-    __wasi_fdflags_t fs_flags;
-
-    /**
-     * Rights that apply to this file descriptor.
-     */
-    __wasi_rights_t fs_rights_base;
-
-    /**
-     * Maximum set of rights that may be installed on new file descriptors that
-     * are created through this file descriptor, e.g., through `path_open`.
-     */
-    __wasi_rights_t fs_rights_inheriting;
-
-} __wasi_fdstat_t;
-
-static_assert(sizeof(__wasi_fdstat_t) == 24, "witx calculated size");
-static_assert(alignof(__wasi_fdstat_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_fdstat_t, fs_filetype) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_fdstat_t, fs_flags) == 2, "witx calculated offset");
-static_assert(offsetof(__wasi_fdstat_t, fs_rights_base) == 8, "witx calculated offset");
-static_assert(offsetof(__wasi_fdstat_t, fs_rights_inheriting) == 16, "witx calculated offset");
-
-/**
- * Identifier for a device containing a file system. Can be used in combination
- * with `inode` to uniquely identify a file or directory in the filesystem.
- */
-typedef uint64_t __wasi_device_t;
-
-static_assert(sizeof(__wasi_device_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_device_t) == 8, "witx calculated align");
-
-/**
- * Which file time attributes to adjust.
- */
-typedef __wasi_errno_t __wasi_fstflags_t;
-
-/**
- * Adjust the last data access timestamp to the value stored in `filestat::atim`.
- */
-#define __WASI_FSTFLAGS_ATIM ((__wasi_fstflags_t)(1 << 0))
-
-/**
- * Adjust the last data access timestamp to the time of clock `clockid::realtime`.
- */
-#define __WASI_FSTFLAGS_ATIM_NOW ((__wasi_fstflags_t)(1 << 1))
-
-/**
- * Adjust the last data modification timestamp to the value stored in `filestat::mtim`.
- */
-#define __WASI_FSTFLAGS_MTIM ((__wasi_fstflags_t)(1 << 2))
-
-/**
- * Adjust the last data modification timestamp to the time of clock `clockid::realtime`.
- */
-#define __WASI_FSTFLAGS_MTIM_NOW ((__wasi_fstflags_t)(1 << 3))
-
-/**
- * Flags determining the method of how paths are resolved.
- */
-typedef uint32_t __wasi_lookupflags_t;
-
-/**
- * As long as the resolved path corresponds to a symbolic link, it is expanded.
- */
-#define __WASI_LOOKUPFLAGS_SYMLINK_FOLLOW ((__wasi_lookupflags_t)(1 << 0))
-
-/**
- * Open flags used by `path_open`.
- */
-typedef __wasi_errno_t __wasi_oflags_t;
-
-/**
- * Create file if it does not exist.
- */
-#define __WASI_OFLAGS_CREAT ((__wasi_oflags_t)(1 << 0))
-
-/**
- * Fail if not a directory.
- */
-#define __WASI_OFLAGS_DIRECTORY ((__wasi_oflags_t)(1 << 1))
-
-/**
- * Fail if file already exists.
- */
-#define __WASI_OFLAGS_EXCL ((__wasi_oflags_t)(1 << 2))
-
-/**
- * Truncate file to size 0.
- */
-#define __WASI_OFLAGS_TRUNC ((__wasi_oflags_t)(1 << 3))
-
-/**
- * Number of hard links to an inode.
- */
-typedef uint64_t __wasi_linkcount_t;
-
-static_assert(sizeof(__wasi_linkcount_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_linkcount_t) == 8, "witx calculated align");
-
-/**
- * File attributes.
- */
-typedef struct __wasi_filestat_t {
-    /**
-     * Device ID of device containing the file.
-     */
-    __wasi_device_t dev;
-
-    /**
-     * File serial number.
-     */
-    __wasi_inode_t ino;
-
-    /**
-     * File type.
-     */
-    __wasi_filetype_t filetype;
-
-    /**
-     * Number of hard links to the file.
-     */
-    __wasi_linkcount_t nlink;
-
-    /**
-     * For regular files, the file size in bytes. For symbolic links, the length in bytes of the pathname contained in the symbolic link.
-     */
-    __wasi_filesize_t size;
-
-    /**
-     * Last data access timestamp.
-     */
-    __wasi_timestamp_t atim;
-
-    /**
-     * Last data modification timestamp.
-     */
-    __wasi_timestamp_t mtim;
-
-    /**
-     * Last file status change timestamp.
-     */
-    __wasi_timestamp_t ctim;
-
-} __wasi_filestat_t;
-
-static_assert(sizeof(__wasi_filestat_t) == 64, "witx calculated size");
-static_assert(alignof(__wasi_filestat_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_filestat_t, dev) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, ino) == 8, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, filetype) == 16, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, nlink) == 24, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, size) == 32, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, atim) == 40, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, mtim) == 48, "witx calculated offset");
-static_assert(offsetof(__wasi_filestat_t, ctim) == 56, "witx calculated offset");
-
-/**
- * User-provided value that may be attached to objects that is retained when
- * extracted from the implementation.
- */
-typedef uint64_t __wasi_userdata_t;
-
-static_assert(sizeof(__wasi_userdata_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_userdata_t) == 8, "witx calculated align");
-
-/**
- * Type of a subscription to an event or its occurrence.
- */
-typedef uint8_t __wasi_eventtype_t;
-
-/**
- * The time value of clock `subscription_clock::id` has
- * reached timestamp `subscription_clock::timeout`.
- */
-#define __WASI_EVENTTYPE_CLOCK (UINT8_C(0))
-
-/**
- * File descriptor `subscription_fd_readwrite::file_descriptor` has data
- * available for reading. This event always triggers for regular files.
- */
-#define __WASI_EVENTTYPE_FD_READ (UINT8_C(1))
-
-/**
- * File descriptor `subscription_fd_readwrite::file_descriptor` has capacity
- * available for writing. This event always triggers for regular files.
- */
-#define __WASI_EVENTTYPE_FD_WRITE (UINT8_C(2))
-
-static_assert(sizeof(__wasi_eventtype_t) == 1, "witx calculated size");
-static_assert(alignof(__wasi_eventtype_t) == 1, "witx calculated align");
-
-/**
- * The state of the file descriptor subscribed to with
- * `eventtype::fd_read` or `eventtype::fd_write`.
- */
-typedef __wasi_errno_t __wasi_eventrwflags_t;
-
-/**
- * The peer of this socket has closed or disconnected.
- */
-#define __WASI_EVENTRWFLAGS_FD_READWRITE_HANGUP ((__wasi_eventrwflags_t)(1 << 0))
-
-/**
- * The contents of an `event` when type is `eventtype::fd_read` or
- * `eventtype::fd_write`.
- */
-typedef struct __wasi_event_fd_readwrite_t {
-    /**
-     * The number of bytes available for reading or writing.
-     */
-    __wasi_filesize_t nbytes;
-
-    /**
-     * The state of the file descriptor.
-     */
-    __wasi_eventrwflags_t flags;
-
-} __wasi_event_fd_readwrite_t;
-
-static_assert(sizeof(__wasi_event_fd_readwrite_t) == 16, "witx calculated size");
-static_assert(alignof(__wasi_event_fd_readwrite_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_event_fd_readwrite_t, nbytes) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_event_fd_readwrite_t, flags) == 8, "witx calculated offset");
-
-/**
- * An event that occurred.
- */
-typedef struct __wasi_event_t {
-    /**
-     * User-provided value that got attached to `subscription::userdata`.
-     */
-    __wasi_userdata_t userdata;
-
-    /**
-     * If non-zero, an error that occurred while processing the subscription request.
-     */
-    __wasi_errno_t error;
-
-    /**
-     * The type of event that occured
-     */
-    __wasi_eventtype_t type;
-
-    /**
-     * The contents of the event, if it is an `eventtype::fd_read` or
-     * `eventtype::fd_write`. `eventtype::clock` events ignore this field.
-     */
-    __wasi_event_fd_readwrite_t fd_readwrite;
-
-} __wasi_event_t;
-
-static_assert(sizeof(__wasi_event_t) == 32, "witx calculated size");
-static_assert(alignof(__wasi_event_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_event_t, userdata) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_event_t, error) == 8, "witx calculated offset");
-static_assert(offsetof(__wasi_event_t, type) == 10, "witx calculated offset");
-static_assert(offsetof(__wasi_event_t, fd_readwrite) == 16, "witx calculated offset");
-
-/**
- * Flags determining how to interpret the timestamp provided in
- * `subscription_clock::timeout`.
- */
-typedef __wasi_errno_t __wasi_subclockflags_t;
-
-/**
- * If set, treat the timestamp provided in
- * `subscription_clock::timeout` as an absolute timestamp of clock
- * `subscription_clock::id`. If clear, treat the timestamp
- * provided in `subscription_clock::timeout` relative to the
- * current time value of clock `subscription_clock::id`.
- */
-#define __WASI_SUBCLOCKFLAGS_SUBSCRIPTION_CLOCK_ABSTIME ((__wasi_subclockflags_t)(1 << 0))
-
-/**
- * The contents of a `subscription` when type is `eventtype::clock`.
- */
-typedef struct __wasi_subscription_clock_t {
-    /**
-     * The clock against which to compare the timestamp.
-     */
-    __wasi_clockid_t id;
-
-    /**
-     * The absolute or relative timestamp.
-     */
-    __wasi_timestamp_t timeout;
-
-    /**
-     * The amount of time that the implementation may wait additionally
-     * to coalesce with other events.
-     */
-    __wasi_timestamp_t precision;
-
-    /**
-     * Flags specifying whether the timeout is absolute or relative
-     */
-    __wasi_subclockflags_t flags;
-
-} __wasi_subscription_clock_t;
-
-static_assert(sizeof(__wasi_subscription_clock_t) == 32, "witx calculated size");
-static_assert(alignof(__wasi_subscription_clock_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_subscription_clock_t, id) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_subscription_clock_t, timeout) == 8, "witx calculated offset");
-static_assert(offsetof(__wasi_subscription_clock_t, precision) == 16, "witx calculated offset");
-static_assert(offsetof(__wasi_subscription_clock_t, flags) == 24, "witx calculated offset");
-
-/**
- * The contents of a `subscription` when type is type is
- * `eventtype::fd_read` or `eventtype::fd_write`.
- */
-typedef struct __wasi_subscription_fd_readwrite_t {
-    /**
-     * The file descriptor on which to wait for it to become ready for reading or writing.
-     */
-    __wasi_fd_t file_descriptor;
-
-} __wasi_subscription_fd_readwrite_t;
-
-static_assert(sizeof(__wasi_subscription_fd_readwrite_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_subscription_fd_readwrite_t) == 4, "witx calculated align");
-static_assert(offsetof(__wasi_subscription_fd_readwrite_t, file_descriptor) == 0, "witx calculated offset");
-
-/**
- * The contents of a `subscription`.
- */
-typedef union __wasi_subscription_u_u_t {
-    __wasi_subscription_clock_t clock;
-    __wasi_subscription_fd_readwrite_t fd_read;
-    __wasi_subscription_fd_readwrite_t fd_write;
-} __wasi_subscription_u_u_t;
-typedef struct __wasi_subscription_u_t {
-    uint8_t tag;
-    __wasi_subscription_u_u_t u;
-} __wasi_subscription_u_t;
-
-static_assert(sizeof(__wasi_subscription_u_t) == 40, "witx calculated size");
-static_assert(alignof(__wasi_subscription_u_t) == 8, "witx calculated align");
-
-/**
- * Subscription to an event.
- */
-typedef struct __wasi_subscription_t {
-    /**
-     * User-provided value that is attached to the subscription in the
-     * implementation and returned through `event::userdata`.
-     */
-    __wasi_userdata_t userdata;
-
-    /**
-     * The type of the event to which to subscribe, and its contents
-     */
-    __wasi_subscription_u_t u;
-
-} __wasi_subscription_t;
-
-static_assert(sizeof(__wasi_subscription_t) == 48, "witx calculated size");
-static_assert(alignof(__wasi_subscription_t) == 8, "witx calculated align");
-static_assert(offsetof(__wasi_subscription_t, userdata) == 0, "witx calculated offset");
-static_assert(offsetof(__wasi_subscription_t, u) == 8, "witx calculated offset");
-
-/**
- * Exit code generated by a process when exiting.
- */
-typedef uint32_t __wasi_exitcode_t;
-
-static_assert(sizeof(__wasi_exitcode_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_exitcode_t) == 4, "witx calculated align");
-
-/**
- * Flags provided to `sock_recv`.
- */
-typedef __wasi_errno_t __wasi_riflags_t;
-
-/**
- * Returns the message without removing it from the socket's receive queue.
- */
-#define __WASI_RIFLAGS_RECV_PEEK ((__wasi_riflags_t)(1 << 0))
-
-/**
- * On byte-stream sockets, block until the full amount of data can be returned.
- */
-#define __WASI_RIFLAGS_RECV_WAITALL ((__wasi_riflags_t)(1 << 1))
-
-/**
- * Flags returned by `sock_recv`.
- */
-typedef __wasi_errno_t __wasi_roflags_t;
-
-/**
- * Returned by `sock_recv`: Message data has been truncated.
- */
-#define __WASI_ROFLAGS_RECV_DATA_TRUNCATED ((__wasi_roflags_t)(1 << 0))
-
-/**
- * Flags provided to `sock_send`. As there are currently no flags
- * defined, it must be set to zero.
- */
-typedef __wasi_errno_t __wasi_siflags_t;
-
-static_assert(sizeof(__wasi_siflags_t) == 2, "witx calculated size");
-static_assert(alignof(__wasi_siflags_t) == 2, "witx calculated align");
-
-/**
- * Which channels on a socket to shut down.
- */
-typedef uint8_t __wasi_sdflags_t;
-
-/**
- * Disables further receive operations.
- */
-#define __WASI_SDFLAGS_RD ((__wasi_sdflags_t)(1 << 0))
-
-/**
- * Disables further send operations.
- */
-#define __WASI_SDFLAGS_WR ((__wasi_sdflags_t)(1 << 1))
-
-/**
- * Identifiers for preopened capabilities.
- */
-typedef uint8_t __wasi_preopentype_t;
-
-/**
- * A pre-opened directory.
- */
-#define __WASI_PREOPENTYPE_DIR (UINT8_C(0))
-
-static_assert(sizeof(__wasi_preopentype_t) == 1, "witx calculated size");
-static_assert(alignof(__wasi_preopentype_t) == 1, "witx calculated align");
-
-/**
- * The contents of a $prestat when type is `preopentype::dir`.
- */
-typedef struct __wasi_prestat_dir_t {
-    /**
-     * The length of the directory name for use with `fd_prestat_dir_name`.
-     */
-    __wasi_size_t pr_name_len;
-
-} __wasi_prestat_dir_t;
-
-static_assert(sizeof(__wasi_prestat_dir_t) == 4, "witx calculated size");
-static_assert(alignof(__wasi_prestat_dir_t) == 4, "witx calculated align");
-static_assert(offsetof(__wasi_prestat_dir_t, pr_name_len) == 0, "witx calculated offset");
-
-/**
- * Information about a pre-opened capability.
- */
-typedef union __wasi_prestat_u_t {
-    __wasi_prestat_dir_t dir;
-} __wasi_prestat_u_t;
-typedef struct __wasi_prestat_t {
-    uint8_t tag;
-    __wasi_prestat_u_t u;
-} __wasi_prestat_t;
-
-static_assert(sizeof(__wasi_prestat_t) == 8, "witx calculated size");
-static_assert(alignof(__wasi_prestat_t) == 4, "witx calculated align");
-
-// clang-format on
+#include <ctime>
 
 namespace tss {
 
 inline wasm_store_t *g_store = nullptr;
+
+inline wasm_memory_t *g_memory = nullptr;
 
 inline auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
     switch (valkind) {
@@ -1440,559 +81,816 @@ inline auto wasm_val_vec_to_str(const wasm_val_vec_t *vals) -> std::string {
     return str;
 }
 
-inline auto wasi_args_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
+inline auto wasm_check_pointer(int32_t pointer_value, size_t object_size, size_t mem_size) -> bool {
+    if (object_size > mem_size) {
+        return false;
+    }
+    if (pointer_value > static_cast<int32_t>(mem_size - object_size)) {
+        return false;
+    }
+    return true;
+}
+
+inline auto wasm_wasi_fix_return_type(wasm_valkind_t *kind, bool *printed) {
+    if (*kind != WASM_I32) {
+        if (!*printed) {
+            *printed = true;
+            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(*kind));
         }
-        results->data[0].kind = WASM_I32;
+        *kind = WASM_I32;
     }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
 }
 
-inline auto wasi_args_sizes_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasm_print_func_called(std::string func, const wasm_val_vec_t *args, const wasm_val_vec_t *results) {
+    fmt::print("==> func called {}({}) -> ({})\n", func, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
 }
 
-inline auto wasi_environ_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
+template <wasm_valkind_t T>
+inline constexpr auto wasm_get_from_val(wasm_val_t val) {
+    assert(val.kind == T);
+    if constexpr (T == WASM_I32) {
+        return val.of.i32;
     }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+    if constexpr (T == WASM_I64) {
+        return val.of.i64;
+    }
+    if constexpr (T == WASM_F32) {
+        return val.of.f32;
+    }
+    if constexpr (T == WASM_F64) {
+        return val.of.f64;
+    }
+    if constexpr (T == WASM_EXTERNREF) {
+        return val.of.ref;
+    }
+    if constexpr (T == WASM_FUNCREF) {
+        return val.of.ref;
+    }
 }
 
-inline auto wasi_environ_sizes_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasm_not_implemented_trap() -> wasm_trap_t * {
+    wasm_message_t message;
+    ::wasm_name_new_from_string_nt(&message, "not implemented");
+    wasm_trap_t *trap = ::wasm_trap_new(g_store, &message);
+    ::wasm_name_delete(&message);
+    return trap;
 }
 
-inline auto wasi_clock_res_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+#define NANOSECONDS_PER_SECOND 1000000000ULL
+
+inline auto timespec_to_nanoseconds(const timespec *ts) -> __wasi_timestamp_t {
+    if (ts->tv_sec < 0)
+        return 0;
+    if (static_cast<__wasi_timestamp_t>(ts->tv_sec) >= UINT64_MAX / NANOSECONDS_PER_SECOND)
+        return UINT64_MAX;
+    return static_cast<__wasi_timestamp_t>(ts->tv_sec) * NANOSECONDS_PER_SECOND +
+           static_cast<__wasi_timestamp_t>(ts->tv_nsec);
 }
 
-inline auto wasi_clock_time_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
+inline auto convert_errno(int error) -> __wasi_errno_t {
+    __wasi_errno_t code = std::to_underlying(Errno::e_nosys);
+
+    switch (error) {
+    case EDOM:
+        code = std::to_underlying(Errno::e_dom);
+        break;
+
+    case EILSEQ:
+        code = std::to_underlying(Errno::e_ilseq);
+        break;
+
+    case ERANGE:
+        code = std::to_underlying(Errno::e_range);
+        break;
+
+    case E2BIG:
+        code = std::to_underlying(Errno::e_2big);
+        break;
+
+    case EACCES:
+        code = std::to_underlying(Errno::e_acces);
+        break;
+
+    case EADDRINUSE:
+        code = std::to_underlying(Errno::e_addrinuse);
+        break;
+
+    case EADDRNOTAVAIL:
+        code = std::to_underlying(Errno::e_addrnotavail);
+        break;
+
+    case EAFNOSUPPORT:
+        code = std::to_underlying(Errno::e_afnosupport);
+        break;
+
+    case EAGAIN:
+        code = std::to_underlying(Errno::e_again);
+        break;
+
+    case EALREADY:
+        code = std::to_underlying(Errno::e_already);
+        break;
+
+    case EBADF:
+        code = std::to_underlying(Errno::e_badf);
+        break;
+
+    case EBADMSG:
+        code = std::to_underlying(Errno::e_badmsg);
+        break;
+
+    case EBUSY:
+        code = std::to_underlying(Errno::e_busy);
+        break;
+
+    case ECANCELED:
+        code = std::to_underlying(Errno::e_canceled);
+        break;
+
+    case ECHILD:
+        code = std::to_underlying(Errno::e_child);
+        break;
+
+    case ECONNABORTED:
+        code = std::to_underlying(Errno::e_connaborted);
+        break;
+
+    case ECONNREFUSED:
+        code = std::to_underlying(Errno::e_connrefused);
+        break;
+
+    case ECONNRESET:
+        code = std::to_underlying(Errno::e_connreset);
+        break;
+
+    case EDEADLK:
+        code = std::to_underlying(Errno::e_deadlk);
+        break;
+
+    case EDESTADDRREQ:
+        code = std::to_underlying(Errno::e_destaddrreq);
+        break;
+
+    case EDQUOT:
+        code = std::to_underlying(Errno::e_dquot);
+        break;
+
+    case EEXIST:
+        code = std::to_underlying(Errno::e_exist);
+        break;
+
+    case EFAULT:
+        code = std::to_underlying(Errno::e_fault);
+        break;
+
+    case EFBIG:
+        code = std::to_underlying(Errno::e_fbig);
+        break;
+
+    case EHOSTUNREACH:
+        code = std::to_underlying(Errno::e_hostunreach);
+        break;
+
+    case EIDRM:
+        code = std::to_underlying(Errno::e_idrm);
+        break;
+
+    case EINPROGRESS:
+        code = std::to_underlying(Errno::e_inprogress);
+        break;
+
+    case EINTR:
+        code = std::to_underlying(Errno::e_intr);
+        break;
+
+    case EINVAL:
+        code = std::to_underlying(Errno::e_inval);
+        break;
+
+    case EIO:
+        code = std::to_underlying(Errno::e_io);
+        break;
+
+    case EISCONN:
+        code = std::to_underlying(Errno::e_isconn);
+        break;
+
+    case EISDIR:
+        code = std::to_underlying(Errno::e_isdir);
+        break;
+
+    case ELOOP:
+        code = std::to_underlying(Errno::e_loop);
+        break;
+
+    case EMFILE:
+        code = std::to_underlying(Errno::e_mfile);
+        break;
+
+    case EMLINK:
+        code = std::to_underlying(Errno::e_mlink);
+        break;
+
+    case EMSGSIZE:
+        code = std::to_underlying(Errno::e_msgsize);
+        break;
+
+    case EMULTIHOP:
+        code = std::to_underlying(Errno::e_multihop);
+        break;
+
+    case ENAMETOOLONG:
+        code = std::to_underlying(Errno::e_nametoolong);
+        break;
+
+    case ENETDOWN:
+        code = std::to_underlying(Errno::e_netdown);
+        break;
+
+    case ENETRESET:
+        code = std::to_underlying(Errno::e_netreset);
+        break;
+
+    case ENETUNREACH:
+        code = std::to_underlying(Errno::e_netunreach);
+        break;
+
+    case ENFILE:
+        code = std::to_underlying(Errno::e_nfile);
+        break;
+
+    case ENOBUFS:
+        code = std::to_underlying(Errno::e_nobufs);
+        break;
+
+    case ENODEV:
+        code = std::to_underlying(Errno::e_nodev);
+        break;
+
+    case ENOENT:
+        code = std::to_underlying(Errno::e_noent);
+        break;
+
+    case ENOEXEC:
+        code = std::to_underlying(Errno::e_noexec);
+        break;
+
+    case ENOLCK:
+        code = std::to_underlying(Errno::e_nolck);
+        break;
+
+    case ENOLINK:
+        code = std::to_underlying(Errno::e_nolink);
+        break;
+
+    case ENOMEM:
+        code = std::to_underlying(Errno::e_nomem);
+        break;
+
+    case ENOMSG:
+        code = std::to_underlying(Errno::e_nomsg);
+        break;
+
+    case ENOPROTOOPT:
+        code = std::to_underlying(Errno::e_noprotoopt);
+        break;
+
+    case ENOSPC:
+        code = std::to_underlying(Errno::e_nospc);
+        break;
+
+    case ENOSYS:
+        code = std::to_underlying(Errno::e_nosys);
+        break;
+
+#ifdef ENOTCAPABLE
+    case ENOTCAPABLE:
+        code = std::to_underlying(Errno::e_notcapable);
+        break;
+#endif
+
+    case ENOTCONN:
+        code = std::to_underlying(Errno::e_notconn);
+        break;
+
+    case ENOTDIR:
+        code = std::to_underlying(Errno::e_notdir);
+        break;
+
+    case ENOTEMPTY:
+        code = std::to_underlying(Errno::e_notempty);
+        break;
+
+    case ENOTRECOVERABLE:
+        code = std::to_underlying(Errno::e_notrecoverable);
+        break;
+
+    case ENOTSOCK:
+        code = std::to_underlying(Errno::e_notsock);
+        break;
+
+    case ENOTSUP:
+        code = std::to_underlying(Errno::e_notsup);
+        break;
+
+    case ENOTTY:
+        code = std::to_underlying(Errno::e_notty);
+        break;
+
+    case ENXIO:
+        code = std::to_underlying(Errno::e_nxio);
+        break;
+
+    case EOVERFLOW:
+        code = std::to_underlying(Errno::e_overflow);
+        break;
+
+    case EOWNERDEAD:
+        code = std::to_underlying(Errno::e_ownerdead);
+        break;
+
+    case EPERM:
+        code = std::to_underlying(Errno::e_perm);
+        break;
+
+    case EPIPE:
+        code = std::to_underlying(Errno::e_pipe);
+        break;
+
+    case EPROTO:
+        code = std::to_underlying(Errno::e_proto);
+        break;
+
+    case EPROTONOSUPPORT:
+        code = std::to_underlying(Errno::e_protonosupport);
+        break;
+
+    case EPROTOTYPE:
+        code = std::to_underlying(Errno::e_prototype);
+        break;
+
+    case EROFS:
+        code = std::to_underlying(Errno::e_rofs);
+        break;
+
+    case ESPIPE:
+        code = std::to_underlying(Errno::e_spipe);
+        break;
+
+    case ESRCH:
+        code = std::to_underlying(Errno::e_srch);
+        break;
+
+    case ESTALE:
+        code = std::to_underlying(Errno::e_stale);
+        break;
+
+    case ETIMEDOUT:
+        code = std::to_underlying(Errno::e_timedout);
+        break;
+
+    case ETXTBSY:
+        code = std::to_underlying(Errno::e_txtbsy);
+        break;
+
+    case EXDEV:
+        code = std::to_underlying(Errno::e_xdev);
+        break;
+
+    default:
+        if (error == EOPNOTSUPP)
+            code = std::to_underlying(Errno::e_notsup);
+
+        if (error == EWOULDBLOCK)
+            code = std::to_underlying(Errno::e_again);
+
+        break;
     }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+
+    return code;
 }
 
-inline auto wasi_fd_advise_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+#define mem_as(mem, as) *reinterpret_cast<as *>(&mem)
+
+inline auto wasi_args_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_close_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_args_sizes_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_datasync_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_environ_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_fdstat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_environ_sizes_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_fdstat_set_flags_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_clock_res_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_filestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
+inline auto wasi_clock_time_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    assert(args->size == 3);
+    assert(results->size == 1);
+    __wasi_clockid_t clock_id = static_cast<__wasi_clockid_t>(wasm_get_from_val<WASM_I32>(args->data[0]));
+    int64_t precision         = wasm_get_from_val<WASM_I64>(args->data[1]);
+    int32_t time_ptr          = wasm_get_from_val<WASM_I32>(args->data[2]);
+    UNUSED(precision);
+    byte_t *mem     = wasm_memory_data(g_memory);
+    size_t mem_size = wasm_memory_data_size(g_memory);
+
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+
+    auto target = reinterpret_cast<__wasi_timestamp_t *>(&mem[time_ptr]);
+
+    if (!wasm_check_pointer(time_ptr, sizeof(__wasi_timestamp_t), mem_size)) {
+        results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        goto out;
     }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
+
+    if (!magic_enum::enum_contains<ClockID>(clock_id)) {
+        results->data[0].of.i32 = std::to_underlying(Errno::e_inval);
+        goto out;
+    }
+
+    timespec ts;
+    if (clock_gettime(static_cast<clockid_t>(clock_id), &ts) < 0) {
+        results->data[0].of.i32 = convert_errno(errno);
+        goto out;
+    }
+
+    *target = timespec_to_nanoseconds(&ts);
+    fmt::print("setting mem {:#Lx} to {:#Lx}\n", time_ptr, *target);
+
+out:
+    wasm_print_func_called(__func__, args, results);
     return nullptr;
+    // return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_filestat_set_size_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_advise_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_filestat_set_times_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_close_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_pread_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_datasync_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_prestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    if (args->data[0].of.i32 > 100) {
-        wasm_message_t message;
-        wasm_name_new_from_string_nt(&message, "callback abort");
-        wasm_trap_t *trap = wasm_trap_new(g_store, &message);
-        wasm_name_delete(&message);
-        return trap;
-    }
-    return nullptr;
+inline auto wasi_fd_fdstat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_prestat_dir_name_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    if (args->data[0].of.i32 > 100) {
-        wasm_name_t message;
-        wasm_name_new_from_string_nt(&message, "callback abort");
-        wasm_trap_t *trap = wasm_trap_new(g_store, &message);
-        wasm_name_delete(&message);
-        return trap;
-    }
-    return nullptr;
+inline auto
+wasi_fd_fdstat_set_flags_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_pwrite_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_filestat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_read_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_fd_filestat_set_size_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_readdir_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_fd_filestat_set_times_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_seek_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_pread_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_sync_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_prestat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_tell_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_fd_prestat_dir_name_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_fd_write_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_pwrite_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_create_directory_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_read_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_filestat_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_readdir_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_filestat_set_times_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_seek_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_link_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_sync_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_open_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_tell_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_readlink_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_fd_write_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_remove_directory_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_path_create_directory_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_rename_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_path_filestat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_symlink_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_path_filestat_set_times_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_path_unlink_file_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_path_link_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_poll_oneoff_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_path_open_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_proc_exit_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_path_readlink_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_sched_yield_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_path_remove_directory_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_random_get_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_path_rename_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_sock_accept_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_path_symlink_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_sock_recv_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto
+wasi_path_unlink_file_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_sock_send_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_poll_oneoff_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_sock_shutdown_stub(const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
-    if (results->data[0].kind != WASM_I32) {
-        static bool printed = false;
-        if (!printed) {
-            printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(results->data[0].kind));
-        }
-        results->data[0].kind = WASM_I32;
-    }
-    fmt::print("==> func called {}({}) -> ({})\n", __func__, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
-    return nullptr;
+inline auto wasi_proc_exit_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
 }
 
-inline auto wasi_get_stub_from_str(const std::string str) -> wasm_func_callback_t {
+inline auto wasi_sched_yield_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
+}
+
+inline auto wasi_random_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
+}
+
+inline auto wasi_sock_accept_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
+}
+
+inline auto wasi_sock_recv_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
+}
+
+inline auto wasi_sock_send_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
+}
+
+inline auto wasi_sock_shutdown_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
+    UNUSED(env);
+    static bool printed = false;
+    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    results->data[0].of.i32 = std::to_underlying(Errno::e_success);
+    wasm_print_func_called(__func__, args, results);
+    return wasm_not_implemented_trap();
+}
+
+inline auto wasi_get_stub_from_str(const std::string str) -> wasm_func_callback_with_env_t {
     // clang-format off
     if (str.find("wasi_snapshot_preview1::args_get(i32, i32) -> (i32)") != std::string::npos)
         return wasi_args_get_stub;
@@ -2291,28 +1189,28 @@ __wasi_errno_t __wasi_fd_filestat_set_times(
     __wasi_fstflags_t fst_flags
 ) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Read from a file descriptor, without using and updating the file descriptor's offset.
-//  * Note: This is similar to `preadv` in POSIX.
-//  * @return
-//  * The number of bytes read.
-//  */
-// __wasi_errno_t __wasi_fd_pread(
-//     __wasi_fd_t fd,
-//     /**
-//      * List of scatter/gather vectors in which to store data.
-//      */
-//     const __wasi_iovec_t *iovs,
-//     /**
-//      * The length of the array pointed to by `iovs`.
-//      */
-//     size_t iovs_len,
-//     /**
-//      * The offset within the file at which to read.
-//      */
-//     __wasi_filesize_t offset,
-//     __wasi_size_t *retptr0
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Read from a file descriptor, without using and updating the file descriptor's offset.
+ * Note: This is similar to `preadv` in POSIX.
+ * @return
+ * The number of bytes read.
+ */
+__wasi_errno_t __wasi_fd_pread(
+    __wasi_fd_t fd,
+    /**
+     * List of scatter/gather vectors in which to store data.
+     */
+    const __wasi_iovec_t *iovs,
+    /**
+     * The length of the array pointed to by `iovs`.
+     */
+    size_t iovs_len,
+    /**
+     * The offset within the file at which to read.
+     */
+    __wasi_filesize_t offset,
+    __wasi_size_t *retptr0
+) __attribute__((__warn_unused_result__));
 
 /**
  * Return a description of the given preopened file descriptor.
@@ -2336,47 +1234,47 @@ __wasi_errno_t __wasi_fd_prestat_dir_name(
     __wasi_size_t path_len
 ) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Write to a file descriptor, without using and updating the file descriptor's offset.
-//  * Note: This is similar to `pwritev` in POSIX.
-//  * @return
-//  * The number of bytes written.
-//  */
-// __wasi_errno_t __wasi_fd_pwrite(
-//     __wasi_fd_t fd,
-//     /**
-//      * List of scatter/gather vectors from which to retrieve data.
-//      */
-//     const __wasi_ciovec_t *iovs,
-//     /**
-//      * The length of the array pointed to by `iovs`.
-//      */
-//     size_t iovs_len,
-//     /**
-//      * The offset within the file at which to write.
-//      */
-//     __wasi_filesize_t offset,
-//     __wasi_size_t *retptr0
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Write to a file descriptor, without using and updating the file descriptor's offset.
+ * Note: This is similar to `pwritev` in POSIX.
+ * @return
+ * The number of bytes written.
+ */
+__wasi_errno_t __wasi_fd_pwrite(
+    __wasi_fd_t fd,
+    /**
+     * List of scatter/gather vectors from which to retrieve data.
+     */
+    const __wasi_ciovec_t *iovs,
+    /**
+     * The length of the array pointed to by `iovs`.
+     */
+    size_t iovs_len,
+    /**
+     * The offset within the file at which to write.
+     */
+    __wasi_filesize_t offset,
+    __wasi_size_t *retptr0
+) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Read from a file descriptor.
-//  * Note: This is similar to `readv` in POSIX.
-//  * @return
-//  * The number of bytes read.
-//  */
-// __wasi_errno_t __wasi_fd_read(
-//     __wasi_fd_t fd,
-//     /**
-//      * List of scatter/gather vectors to which to store data.
-//      */
-//     const __wasi_iovec_t *iovs,
-//     /**
-//      * The length of the array pointed to by `iovs`.
-//      */
-//     size_t iovs_len,
-//     __wasi_size_t *retptr0
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Read from a file descriptor.
+ * Note: This is similar to `readv` in POSIX.
+ * @return
+ * The number of bytes read.
+ */
+__wasi_errno_t __wasi_fd_read(
+    __wasi_fd_t fd,
+    /**
+     * List of scatter/gather vectors to which to store data.
+     */
+    const __wasi_iovec_t *iovs,
+    /**
+     * The length of the array pointed to by `iovs`.
+     */
+    size_t iovs_len,
+    __wasi_size_t *retptr0
+) __attribute__((__warn_unused_result__));
 
 /**
  * Read directory entries from a directory.
@@ -2461,22 +1359,22 @@ __wasi_errno_t __wasi_fd_tell(
     __wasi_filesize_t *retptr0
 ) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Write to a file descriptor.
-//  * Note: This is similar to `writev` in POSIX.
-//  */
-// __wasi_errno_t __wasi_fd_write(
-//     __wasi_fd_t fd,
-//     /**
-//      * List of scatter/gather vectors from which to retrieve data.
-//      */
-//     const __wasi_ciovec_t *iovs,
-//     /**
-//      * The length of the array pointed to by `iovs`.
-//      */
-//     size_t iovs_len,
-//     __wasi_size_t *retptr0
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Write to a file descriptor.
+ * Note: This is similar to `writev` in POSIX.
+ */
+__wasi_errno_t __wasi_fd_write(
+    __wasi_fd_t fd,
+    /**
+     * List of scatter/gather vectors from which to retrieve data.
+     */
+    const __wasi_ciovec_t *iovs,
+    /**
+     * The length of the array pointed to by `iovs`.
+     */
+    size_t iovs_len,
+    __wasi_size_t *retptr0
+) __attribute__((__warn_unused_result__));
 
 /**
  * Create a directory.
@@ -2705,24 +1603,24 @@ __wasi_errno_t __wasi_poll_oneoff(
     __wasi_size_t *retptr0
 ) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Terminate the process normally. An exit code of 0 indicates successful
-//  * termination of the program. The meanings of other values is dependent on
-//  * the environment.
-//  */
-// void [[noreturn]] __wasi_proc_exit(
-//     /**
-//      * The exit code returned by the process.
-//      */
-//     __wasi_exitcode_t rval
-// );
-// /**
-//  * Temporarily yield execution of the calling thread.
-//  * Note: This is similar to `sched_yield` in POSIX.
-//  */
-// __wasi_errno_t __wasi_sched_yield(
-//     void
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Terminate the process normally. An exit code of 0 indicates successful
+ * termination of the program. The meanings of other values is dependent on
+ * the environment.
+ */
+[[noreturn]] void __wasi_proc_exit(
+    /**
+     * The exit code returned by the process.
+     */
+    __wasi_exitcode_t rval
+);
+/**
+ * Temporarily yield execution of the calling thread.
+ * Note: This is similar to `sched_yield` in POSIX.
+ */
+__wasi_errno_t __wasi_sched_yield(
+    void
+) __attribute__((__warn_unused_result__));
 
 /**
  * Write high-quality random data into a buffer.
@@ -2758,54 +1656,54 @@ __wasi_errno_t __wasi_sock_accept(
     __wasi_fd_t *retptr0
 ) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Receive a message from a socket.
-//  * Note: This is similar to `recv` in POSIX, though it also supports reading
-//  * the data into multiple buffers in the manner of `readv`.
-//  * @return
-//  * Number of bytes stored in ri_data and message flags.
-//  */
-// __wasi_errno_t __wasi_sock_recv(
-//     __wasi_fd_t fd,
-//     /**
-//      * List of scatter/gather vectors to which to store data.
-//      */
-//     const __wasi_iovec_t *ri_data,
-//     /**
-//      * The length of the array pointed to by `ri_data`.
-//      */
-//     size_t ri_data_len,
-//     /**
-//      * Message flags.
-//      */
-//     __wasi_riflags_t ri_flags,
-//     __wasi_size_t *retptr0,
-//     __wasi_roflags_t *retptr1
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Receive a message from a socket.
+ * Note: This is similar to `recv` in POSIX, though it also supports reading
+ * the data into multiple buffers in the manner of `readv`.
+ * @return
+ * Number of bytes stored in ri_data and message flags.
+ */
+__wasi_errno_t __wasi_sock_recv(
+    __wasi_fd_t fd,
+    /**
+     * List of scatter/gather vectors to which to store data.
+     */
+    const __wasi_iovec_t *ri_data,
+    /**
+     * The length of the array pointed to by `ri_data`.
+     */
+    size_t ri_data_len,
+    /**
+     * Message flags.
+     */
+    __wasi_riflags_t ri_flags,
+    __wasi_size_t *retptr0,
+    __wasi_roflags_t *retptr1
+) __attribute__((__warn_unused_result__));
 
-// /**
-//  * Send a message on a socket.
-//  * Note: This is similar to `send` in POSIX, though it also supports writing
-//  * the data from multiple buffers in the manner of `writev`.
-//  * @return
-//  * Number of bytes transmitted.
-//  */
-// __wasi_errno_t __wasi_sock_send(
-//     __wasi_fd_t fd,
-//     /**
-//      * List of scatter/gather vectors to which to retrieve data
-//      */
-//     const __wasi_ciovec_t *si_data,
-//     /**
-//      * The length of the array pointed to by `si_data`.
-//      */
-//     size_t si_data_len,
-//     /**
-//      * Message flags.
-//      */
-//     __wasi_siflags_t si_flags,
-//     __wasi_size_t *retptr0
-// ) __attribute__((__warn_unused_result__));
+/**
+ * Send a message on a socket.
+ * Note: This is similar to `send` in POSIX, though it also supports writing
+ * the data from multiple buffers in the manner of `writev`.
+ * @return
+ * Number of bytes transmitted.
+ */
+__wasi_errno_t __wasi_sock_send(
+    __wasi_fd_t fd,
+    /**
+     * List of scatter/gather vectors to which to retrieve data
+     */
+    const __wasi_ciovec_t *si_data,
+    /**
+     * The length of the array pointed to by `si_data`.
+     */
+    size_t si_data_len,
+    /**
+     * Message flags.
+     */
+    __wasi_siflags_t si_flags,
+    __wasi_size_t *retptr0
+) __attribute__((__warn_unused_result__));
 
 /**
  * Shut down socket send and receive channels.

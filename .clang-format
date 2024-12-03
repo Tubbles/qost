@@ -5,13 +5,13 @@ BasedOnStyle:  LLVM
 AccessModifierOffset: -4
 # AlignAfterOpenBracket: Align
 # AlignArrayOfStructures: None
-# AlignConsecutiveAssignments:
-#   Enabled:         false
-#   AcrossEmptyLines: false
-#   AcrossComments:  false
-#   AlignCompound:   false
-#   AlignFunctionPointers: false
-#   PadOperators:    true
+AlignConsecutiveAssignments:
+  Enabled:         true
+  AcrossEmptyLines: false
+  AcrossComments:  false
+  AlignCompound:   false
+  AlignFunctionPointers: false
+  PadOperators:    true
 # AlignConsecutiveBitFields:
 #   Enabled:         false
 #   AcrossEmptyLines: false
@@ -156,7 +156,7 @@ IndentWidth: 4
 # PackConstructorInitializers: BinPack
 # PenaltyBreakAssignment: 2
 # PenaltyBreakBeforeFirstCallParameter: 19
-# PenaltyBreakComment: 300
+PenaltyBreakComment: 0
 # PenaltyBreakFirstLessLess: 120
 # PenaltyBreakOpenParenthesis: 0
 # PenaltyBreakScopeResolution: 500

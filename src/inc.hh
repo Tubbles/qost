@@ -1,9 +1,5 @@
 #pragma once
 
-// #include "doctest/doctest.h"
-// #include "wren.hpp"
-#include "fmt/format.h"
-#include "wasmer.h"
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -13,8 +9,15 @@
 #include <sstream>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <variant>
 #include <vector>
+
+// #include "doctest/doctest.h"
+// #include "wren.hpp"
+#include "fmt/format.h"
+#include "magic_enum/magic_enum.hpp"
+#include "wasmer.h"
 
 extern "C" {
 #include "lauxlib.h"
@@ -25,5 +28,10 @@ extern "C" {
 
 #define UNUSED(x) ((void)x)
 #define ARRLEN(x) (sizeof(x) / sizeof(*(x)))
+
+// template <class Enum>
+// using tul = std::to_underlying;
+
+#include "wasi_types.hh"
 
 #include "wasi_stubs.hh"

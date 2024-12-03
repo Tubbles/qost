@@ -4,9 +4,9 @@
 [submodule "src/modules/doctest"]
 	path = src/modules/doctest
 	url = https://github.com/doctest/doctest.git
-[submodule "src/modules/wren"]
-	path = src/modules/wren
-	url = https://github.com/wren-lang/wren.git
 [submodule "src/modules/lua"]
 	path = src/modules/lua
 	url = https://github.com/lua/lua.git
+[submodule "src/modules/magic_enum"]
+	path = src/modules/magic_enum
+	url = https://github.com/Neargye/magic_enum.git

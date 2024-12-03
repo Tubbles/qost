@@ -6,8 +6,10 @@
         {
             "label": "build debug",
             "type": "shell",
-            "command": "./build.sh",
-            "args": [],
+            "command": "${workspaceFolder}/build.py",
+            "args": [
+                "verbose",
+            ],
             "group": {
                 "kind": "build",
                 "isDefault": true
@@ -21,9 +23,10 @@
         {
             "label": "build debug pristine",
             "type": "shell",
-            "command": "./build.sh",
+            "command": "${workspaceFolder}/build.py",
             "args": [
-                "p"
+                "verbose",
+                "pristine",
             ],
             "group": {
                 "kind": "build",
@@ -35,11 +38,12 @@
             "problemMatcher": "$gcc",
         },
         {
-            "label": "build release",
+            "label": "build optimized",
             "type": "shell",
-            "command": "./build.sh",
+            "command": "${workspaceFolder}/build.py",
             "args": [
-                "r"
+                "verbose",
+                "optimized",
             ],
             "group": {
                 "kind": "build",
@@ -51,12 +55,13 @@
             "problemMatcher": "$gcc",
         },
         {
-            "label": "build release pristine",
+            "label": "build optimized pristine",
             "type": "shell",
-            "command": "./build.sh",
+            "command": "${workspaceFolder}/build.py",
             "args": [
-                "r",
-                "p"
+                "verbose",
+                "pristine",
+                "optimized",
             ],
             "group": {
                 "kind": "build",

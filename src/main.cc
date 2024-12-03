@@ -1,143 +1,147 @@
 #include "inc.hh"
 
 namespace tss {
-template <typename T>
-concept Printable = requires(T t) {
-    { std::cout << t } -> std::same_as<std::ostream &>;
-};
+// template <typename T>
+// concept Printable = requires(T t) {
+//     { std::cout << t } -> std::same_as<std::ostream &>;
+// };
 
-template <Printable SuccessType, Printable ErrorType>
-class Result {
-public:
-    enum ResultVariant { OkVariant, ErrorVariant };
+// template <Printable SuccessType, Printable ErrorType>
+// class Result {
+// public:
+//     enum ResultVariant { OkVariant, ErrorVariant };
 
-    static Result Ok(SuccessType value) {
-        auto output = Result(value);
-        output.m_Ok = true;
-        return output;
-    }
+//     static Result Ok(SuccessType value) {
+//         auto output = Result(value);
+//         output.m_Ok = true;
+//         return output;
+//     }
 
-    static Result Error(ErrorType value) {
-        auto output = Result(value);
-        output.m_Ok = false;
-        return output;
-    }
+//     static Result Error(ErrorType value) {
+//         auto output = Result(value);
+//         output.m_Ok = false;
+//         return output;
+//     }
 
-    inline bool isOk() const {
-        return m_Ok;
-    }
+//     inline bool isOk() const {
+//         return m_Ok;
+//     }
 
-    inline bool isError() const {
-        return !m_Ok;
-    }
+//     inline bool isError() const {
+//         return !m_Ok;
+//     }
 
-    SuccessType okOrDefault(SuccessType defaultValue) const {
-        return m_Ok ? std::get<OkVariant>(m_Data) : defaultValue;
-    }
+//     SuccessType okOrDefault(SuccessType defaultValue) const {
+//         return m_Ok ? std::get<OkVariant>(m_Data) : defaultValue;
+//     }
 
-    SuccessType unwrap(std::string_view error_msg = "Not OK.") const {
-        if (isError()) {
-            throw std::bad_variant_access();
-        }
-        return std::get<OkVariant>(m_Data);
-    }
+//     SuccessType unwrap(std::string_view error_msg = "Not OK.") const {
+//         if (isError()) {
+//             throw std::bad_variant_access();
+//         }
+//         return std::get<OkVariant>(m_Data);
+//     }
 
-    ErrorType getError(std::string_view error_msg = "Not Error.") const {
-        if (m_Ok) {
-            throw std::bad_variant_access();
-        }
-        return std::get<ErrorVariant>(m_Data);
-    }
+//     ErrorType getError(std::string_view error_msg = "Not Error.") const {
+//         if (m_Ok) {
+//             throw std::bad_variant_access();
+//         }
+//         return std::get<ErrorVariant>(m_Data);
+//     }
 
-private:
-    Result(std::variant<SuccessType, ErrorType> result) : m_Data{result} {}
-    std::variant<SuccessType, ErrorType> m_Data;
-    bool m_Ok{false};
-};
+// private:
+//     Result(std::variant<SuccessType, ErrorType> result) : m_Data{result} {}
+//     std::variant<SuccessType, ErrorType> m_Data;
+//     bool m_Ok{false};
+// };
 
-enum class LuaError {
-    FileOpenError,
-    StringNotFound,
-    StringParseError,
-    NumberNotFound,
-};
+// enum class LuaError {
+//     FileOpenError,
+//     StringNotFound,
+//     StringParseError,
+//     NumberNotFound,
+// };
 
-std::ostream &operator<<(std::ostream &stream, const LuaError &e);
+// std::ostream &operator<<(std::ostream &stream, const LuaError &e);
 
-class LuaInstance {
-public:
-    using StringResult = Result<std::string, LuaError>;
-    using NumberResult = Result<double, LuaError>;
-    LuaInstance();
-    ~LuaInstance();
-    StringResult execute_file(const char *fn);
-    StringResult get_string(const char *var_name);
-    NumberResult get_number(const char *var_name);
+// class LuaInstance {
+// public:
+//     using StringResult = Result<std::string, LuaError>;
+//     using NumberResult = Result<double, LuaError>;
+//     LuaInstance();
+//     ~LuaInstance();
+//     StringResult execute_file(const char *fn);
+//     StringResult get_string(const char *var_name);
+//     NumberResult get_number(const char *var_name);
 
-private:
-    lua_State *const m_L;
-};
+// private:
+//     lua_State *const m_L;
+// };
 
-LuaInstance::LuaInstance() //(1)
-    : m_L{luaL_newstate()} {
-    luaL_openlibs(m_L); //(2)
-}
+// LuaInstance::LuaInstance() //(1)
+//     : m_L{luaL_newstate()} {
+//     luaL_openlibs(m_L); //(2)
+// }
 
-LuaInstance::~LuaInstance() {
-    lua_close(m_L); //(3)
-}
+// LuaInstance::~LuaInstance() {
+//     lua_close(m_L); //(3)
+// }
 
-LuaInstance::StringResult LuaInstance::execute_file(const char *fn) {
-    auto result = luaL_loadfile(m_L, fn); //(4)
-    if (result != 0) {
-        std::cout << lua_tostring(m_L, -1) << std::endl; //(5)
-        lua_pop(m_L, 1);
-        return LuaInstance::StringResult::Error(LuaError::FileOpenError); //(6)
-    }
-    lua_pcall(m_L, 0, LUA_MULTRET, 0);                                  //(7)
-    return LuaInstance::StringResult::Ok("File successfully executed"); //(8)
-}
+// LuaInstance::StringResult LuaInstance::execute_file(const char *fn) {
+//     auto result = luaL_loadfile(m_L, fn); //(4)
+//     if (result != 0) {
+//         std::cout << lua_tostring(m_L, -1) << std::endl; //(5)
+//         lua_pop(m_L, 1);
+//         return LuaInstance::StringResult::Error(LuaError::FileOpenError); //(6)
+//     }
+//     lua_pcall(m_L, 0, LUA_MULTRET, 0);                                  //(7)
+//     return LuaInstance::StringResult::Ok("File successfully executed"); //(8)
+// }
 
-LuaInstance::StringResult LuaInstance::get_string(const char *var_name) //(9)
-{
-    auto result = lua_getglobal(m_L, var_name);
-    if (result != LUA_TSTRING) {
-        lua_pop(m_L, 1);
-        return LuaInstance::StringResult::Error(LuaError::StringNotFound);
-    }
-    auto s = LuaInstance::StringResult::Ok(lua_tostring(m_L, -1));
-    lua_pop(m_L, 1);
-    return s;
-}
+// LuaInstance::StringResult LuaInstance::get_string(const char *var_name) //(9)
+// {
+//     auto result = lua_getglobal(m_L, var_name);
+//     if (result != LUA_TSTRING) {
+//         lua_pop(m_L, 1);
+//         return LuaInstance::StringResult::Error(LuaError::StringNotFound);
+//     }
+//     auto s = LuaInstance::StringResult::Ok(lua_tostring(m_L, -1));
+//     lua_pop(m_L, 1);
+//     return s;
+// }
 
-LuaInstance::NumberResult LuaInstance::get_number(const char *var_name) {
-    auto result = lua_getglobal(m_L, var_name); //(10)
-    if (result != LUA_TNUMBER) {
-        lua_pop(m_L, 1);
-        return LuaInstance::NumberResult::Error(LuaError::NumberNotFound);
-    }
-    auto s = LuaInstance::NumberResult::Ok(lua_tonumber(m_L, -1));
-    lua_pop(LuaInstance::m_L, 1);
-    return s;
-}
+// LuaInstance::NumberResult LuaInstance::get_number(const char *var_name) {
+//     auto result = lua_getglobal(m_L, var_name); //(10)
+//     if (result != LUA_TNUMBER) {
+//         lua_pop(m_L, 1);
+//         return LuaInstance::NumberResult::Error(LuaError::NumberNotFound);
+//     }
+//     auto s = LuaInstance::NumberResult::Ok(lua_tonumber(m_L, -1));
+//     lua_pop(LuaInstance::m_L, 1);
+//     return s;
+// }
 
-std::ostream &operator<<(std::ostream &stream, const LuaError &error) {
-    auto output = [](const LuaError &e) //(11)
-    {
-        switch (e) {
-        case LuaError::FileOpenError:
-            return "LUA ERROR: Error opening file.";
-        case LuaError::StringNotFound:
-            return "LUA ERROR: String not found.";
-        case LuaError::StringParseError:
-            return "LUA ERROR: String could not be parsed.";
-        case LuaError::NumberNotFound:
-            return "LUA ERROR: Number not found.";
-        default:
-            return "LUA ERROR: Unknown error";
-        }
-    };
-    return stream << output(error);
+// std::ostream &operator<<(std::ostream &stream, const LuaError &error) {
+//     auto output = [](const LuaError &e) //(11)
+//     {
+//         switch (e) {
+//         case LuaError::FileOpenError:
+//             return "LUA ERROR: Error opening file.";
+//         case LuaError::StringNotFound:
+//             return "LUA ERROR: String not found.";
+//         case LuaError::StringParseError:
+//             return "LUA ERROR: String could not be parsed.";
+//         case LuaError::NumberNotFound:
+//             return "LUA ERROR: Number not found.";
+//         default:
+//             return "LUA ERROR: Unknown error";
+//         }
+//     };
+//     return stream << output(error);
+// }
+
+auto wasm_limits_to_str(const wasm_limits_t *limits) -> std::string {
+    return fmt::format("{:#08x}, {:#08x}", limits->min, limits->max);
 }
 
 auto wasm_mutability_to_str(wasm_mutability_t mutability) -> std::string {
@@ -176,26 +180,26 @@ auto wasm_externkind_to_str(wasm_externkind_t externkind) -> std::string {
 
 auto wasm_externtype_to_str(const wasm_externtype_t *externtype) -> std::string {
     std::string str;
-    auto externkind = ::wasm_externtype_kind(externtype);
+    const auto externkind = ::wasm_externtype_kind(externtype);
 
     switch (externkind) {
     case WASM_EXTERN_FUNC: {
-        auto functype = ::wasm_externtype_as_functype_const(externtype);
-        auto params = ::wasm_functype_params(functype);
-        auto results = ::wasm_functype_results(functype);
+        const auto functype = ::wasm_externtype_as_functype_const(externtype);
+        const auto params   = ::wasm_functype_params(functype);
+        const auto results  = ::wasm_functype_results(functype);
 
         str += "(";
         for (size_t index = 0; index < params->size; index++) {
-            auto param = params->data[index];
-            auto valkind = ::wasm_valtype_kind(param);
+            const auto param   = params->data[index];
+            const auto valkind = ::wasm_valtype_kind(param);
             str += wasm_valkind_to_str(valkind);
             if (index != params->size - 1)
                 str += ", ";
         }
         str += ") -> (";
         for (size_t index = 0; index < results->size; index++) {
-            auto result = results->data[index];
-            auto valkind = ::wasm_valtype_kind(result);
+            const auto result  = results->data[index];
+            const auto valkind = ::wasm_valtype_kind(result);
             str += wasm_valkind_to_str(valkind);
             if (index != results->size - 1)
                 str += ", ";
@@ -203,13 +207,33 @@ auto wasm_externtype_to_str(const wasm_externtype_t *externtype) -> std::string 
         str += ")";
         break;
     }
-    case WASM_EXTERN_GLOBAL:
-    case WASM_EXTERN_TABLE:
+    case WASM_EXTERN_GLOBAL: {
+        const auto globaltype = wasm_externtype_as_globaltype_const(externtype);
+        const auto mutability = wasm_globaltype_mutability(globaltype);
+        const auto valtype    = wasm_globaltype_content(globaltype);
+        const auto valkind    = wasm_valtype_kind(valtype);
+
+        str += fmt::format(": {} {}", wasm_mutability_to_str(mutability), wasm_valkind_to_str(valkind));
+        break;
+    }
+    case WASM_EXTERN_TABLE: {
+        const auto tabletype = wasm_externtype_as_tabletype_const(externtype);
+        const auto limits    = wasm_tabletype_limits(tabletype);
+        const auto valtype   = wasm_tabletype_element(tabletype);
+        const auto valkind   = wasm_valtype_kind(valtype);
+
+        str += fmt::format("({}): {}", wasm_limits_to_str(limits), wasm_valkind_to_str(valkind));
+        break;
+    }
     case WASM_EXTERN_MEMORY: {
-        str += "NOT YET IMPLEMENTED";
+        const auto memorytype = wasm_externtype_as_memorytype_const(externtype);
+        const auto limits     = wasm_memorytype_limits(memorytype);
+
+        str += fmt::format("({})", wasm_limits_to_str(limits));
         break;
     }
     default: {
+        str += fmt::format("(unknown {})", externkind);
         break;
     }
     }
@@ -217,10 +241,14 @@ auto wasm_externtype_to_str(const wasm_externtype_t *externtype) -> std::string 
     return str;
 }
 
+auto wasm_memory_to_str() -> std::string {
+    return "";
+}
+
 auto wasm_importtype_to_str(const wasm_importtype_t *importtype) -> std::string {
     std::string str;
-    auto module = ::wasm_importtype_module(importtype);
-    auto name = ::wasm_importtype_name(importtype);
+    auto module     = ::wasm_importtype_module(importtype);
+    auto name       = ::wasm_importtype_name(importtype);
     auto externtype = ::wasm_importtype_type(importtype);
     auto externkind = ::wasm_externtype_kind(externtype);
 
@@ -234,7 +262,7 @@ auto wasm_importtype_to_str(const wasm_importtype_t *importtype) -> std::string 
 
 auto wasm_exporttype_to_str(const wasm_exporttype_t *exporttype, const std::string modulename = "") -> std::string {
     std::string str;
-    auto name = ::wasm_exporttype_name(exporttype);
+    auto name       = ::wasm_exporttype_name(exporttype);
     auto externtype = ::wasm_exporttype_type(exporttype);
     auto externkind = ::wasm_externtype_kind(externtype);
 
@@ -290,7 +318,8 @@ auto wasm_frame_to_str(const wasm_frame_t *frame) -> std::string {
     return str;
 }
 
-auto wasm_new_populated_imports_vec(wasm_extern_vec_t *out, const wasm_module_t *module, wasm_store_t *store) {
+auto wasm_new_populated_imports_vec(
+    wasm_extern_vec_t *out, const wasm_module_t *module, wasm_store_t *store, void *env, void (*finalizer)(void *)) {
     wasm_importtype_vec_t imports;
     ::wasm_module_imports(module, &imports);
     wasm_extern_vec_new_uninitialized(out, imports.size);
@@ -302,11 +331,11 @@ auto wasm_new_populated_imports_vec(wasm_extern_vec_t *out, const wasm_module_t 
         switch (externkind) {
         case WASM_EXTERN_FUNC: {
             auto functype = ::wasm_externtype_as_functype_const(externtype);
-            auto str = wasm_importtype_to_str(importtype);
-            auto stub = tss::wasi_get_stub_from_str(str);
-            fmt::print("{} {}\n", stub != nullptr, str);
-            wasm_func_t *func = wasm_func_new(store, functype, stub);
-            out->data[index] = wasm_func_as_extern(func);
+            auto str      = wasm_importtype_to_str(importtype);
+            auto stub     = tss::wasi_get_stub_from_str(str);
+            // fmt::print("{} {}\n", stub != nullptr, str);
+            wasm_func_t *func = wasm_func_new_with_env(store, functype, stub, env, finalizer);
+            out->data[index]  = wasm_func_as_extern(func);
 
             break;
         }
@@ -382,8 +411,8 @@ int main(int argc, char *argv[]) {
 
     fmt::print("Creating the store...\n");
     wasm_engine_t *engine = wasm_engine_new();
-    wasm_store_t *store = wasm_store_new(engine);
-    tss::g_store = store;
+    wasm_store_t *store   = wasm_store_new(engine);
+    tss::g_store          = store;
 
     fmt::print("Compiling module...\n");
     wasm_module_t *module = wasm_module_new(store, &wasm_bytes);
@@ -411,13 +440,14 @@ int main(int argc, char *argv[]) {
     // wasm_extern_t *externs[] = {wasm_func_as_extern(host_func)};
 
     wasm_extern_vec_t imports;
-    tss::wasm_new_populated_imports_vec(&imports, module, store);
+    int a;
+    tss::wasm_new_populated_imports_vec(&imports, module, store, &a, nullptr);
     // wasm_extern_vec_new(&imports, ARRLEN(externs), externs);
     // wasm_extern_vec_t imports = WASM_ARRAY_VEC(externs);
     // wasm_extern_vec_t imports = WASM_EMPTY_VEC;
 
     fmt::print("Instantiating module...\n");
-    wasm_trap_t *trap = NULL;
+    wasm_trap_t *trap         = NULL;
     wasm_instance_t *instance = wasm_instance_new(store, module, &imports, &trap);
 
     wasm_extern_vec_delete(&imports);
@@ -451,6 +481,22 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
+    fmt::print("Retrieving the memory...\n");
+    wasm_memory_t *memory = wasm_extern_as_memory(exports.data[0]);
+
+    if (!memory) {
+        fmt::print("> Failed to get the memory!\n");
+        wasm_module_delete(module);
+        wasm_extern_vec_delete(&exports);
+        wasm_instance_delete(instance);
+        wasm_store_delete(store);
+        wasm_engine_delete(engine);
+        return 1;
+    }
+
+    tss::g_memory = memory;
+    // ::wasm_memory
+
     fmt::print("Retrieving the `_start` function...\n");
     wasm_func_t *start_func = wasm_extern_as_func(exports.data[1]);
 
@@ -469,7 +515,7 @@ int main(int argc, char *argv[]) {
     // wasm_val_t results_val[1] = {WASM_INIT_VAL};
     // wasm_val_vec_t args = WASM_ARRAY_VEC(args_val);
     // wasm_val_vec_t results = WASM_ARRAY_VEC(results_val);
-    wasm_val_vec_t args = WASM_EMPTY_VEC;
+    wasm_val_vec_t args    = WASM_EMPTY_VEC;
     wasm_val_vec_t results = WASM_EMPTY_VEC;
 
     // if (wasm_func_call(start_func, nullptr, nullptr)) {

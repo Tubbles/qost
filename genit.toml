@@ -1,9 +1,11 @@
 [variable]
 src = "{root}/src"
+scripts = "{root}/scripts"
 modules = "{src}/modules"
 doctest = "{modules}/doctest"
 fmt = "{modules}/fmt"
 lua = "{modules}/lua"
+magic_enum = "{modules}/magic_enum"
 wasmer = "{modules}/wasmer/wasmer-linux-amd64"
 common_compile_flags = [
     "-fdiagnostics-color=always",
@@ -33,6 +35,7 @@ common_compile_flags = [
     "-I {doctest}",
     "-I {fmt}/include",
     "-I {lua}",
+    "-I {magic_enum}/include",
     "-I {wasmer}/include",
 ]
 common_c_flags = [
@@ -66,20 +69,25 @@ cflags = [
     "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
+    "-DDEBUG",
     "{common_c_flags}",
+    #
 ]
 cxxflags = [
     "-Og",
     "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
+    "-DDEBUG",
     "{common_cxx_flags}",
+    #
 ]
 ldflags = [
     "-Og",
     "-g",
     "-fsanitize=address",
     "-fsanitize=undefined",
+    "-DDEBUG",
     "{common_ld_flags}",
     #
 ]
@@ -117,7 +125,7 @@ deps = "gcc"
 [rule.ld]
 command = "g++ -o {out} {in} {ldflags}" # Flag ordering here is important for ld
 
-[binary."quest-on-saer-tor"]
+[binary."{build_dir}/quest-on-saer-tor"]
 rule = "ld"
 dependencies = [
     { rule = "cxx", files = [
