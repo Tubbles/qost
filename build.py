@@ -19,7 +19,7 @@ available_arguments = [
     ("pristine", "Clean the build directory before build"),
     ("run", "Run the resulting executable after a successful build"),
     ("setup", f"Operate on the third party libraries instead of the project itself. {available_modules_help_text}"),
-    ("test", "Run all tests"),
+    ("test", "Build and run all tests"),
     ("verbose", "Print verbose information to the terminal"),
 ]
 
@@ -57,6 +57,7 @@ if __name__ == "__main__":
     import shutil
     import subprocess
     import sys
+    from typing import Literal
 
     my_path_obj = Path(inspect.getsourcefile(lambda: 0)).absolute()
     my_path = str(my_path_obj)
@@ -107,12 +108,16 @@ if __name__ == "__main__":
     test = "test" in expanded_args
     verbose = "verbose" in expanded_args
 
+    build = not generate
+    debug = not optimized
+
     if verbose:
         print(args)
         print(sys.argv)
         pp = pprint.PrettyPrinter(depth=4)
         pp.pprint({key: value for (key, value) in locals().items() if key in possible_arg_names})
 
+    # Check if we need to run setup
     first_time_setup_needed = False
     num_third_party_files = 0
     for _, _, files in os.walk(str(Path(f"{root}/src/modules"))):
@@ -138,53 +143,59 @@ if __name__ == "__main__":
         if setup:
             sys.exit(returncode)
 
-    build = not generate
-    debug = not optimized
-    build_type = "debug" if debug else "optimized"
-    build_dir = str(Path(f"{root}/output/{build_type}"))
+    def runner(build_type: Literal["debug", "optimized", "test"]):
+        # build_type = "debug" if debug else "optimized"
+        build_dir = str(Path(f"{root}/output/{build_type}"))
 
-    ninja_build_file = str(Path(f"{build_dir}/build.ninja"))
+        ninja_build_file = str(Path(f"{build_dir}/build.ninja"))
 
-    genit_args = {}
-    ninja_args = []
-    genit_args["input"] = str(Path(f"{root}/genit.toml"))
-    genit_args["output"] = ninja_build_file
-    genit_args["profile"] = build_type
+        genit_args = {}
+        ninja_args = []
+        genit_args["input"] = str(Path(f"{root}/genit.toml"))
+        genit_args["output"] = ninja_build_file
+        genit_args["profile"] = build_type
 
-    if pristine:
-        shutil.rmtree(build_dir)
+        if pristine and os.path.exists(build_dir):
+            shutil.rmtree(build_dir)
 
-    if not os.path.exists(ninja_build_file):
-        generate = True
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
 
-    if not os.path.exists(build_dir):
-        os.makedirs(build_dir)
+        global generate
+        if not os.path.exists(ninja_build_file):
+            generate = True
 
-    genit_args["build_dir"] = build_dir
-    ninja_args += ["-C", build_dir]
+        genit_args["build_dir"] = build_dir
+        ninja_args += ["-C", build_dir]
 
-    genit_args["verbose"] = verbose
-    if verbose:
-        ninja_args.append("--verbose")
-
-    if generate:
-        genit.main(**genit_args)
-
+        global verbose
+        genit_args["verbose"] = verbose
         if verbose:
-            with open(ninja_build_file, "r") as ninja_build:
-                print("".join(ninja_build.readlines()))
+            ninja_args.append("--verbose")
 
-        with open(str(Path(f"{build_dir}/compile_commands.json")), "w") as compile_commands:
-            subprocess.run(["ninja"] + ninja_args + ["-t", "compdb"], stdout=compile_commands).check_returncode()
+        if generate:
+            genit.main(**genit_args)
 
-    program = str(Path(f"{build_dir}/{project}"))
-    if build:
-        subprocess.run(["ninja"] + ninja_args + [program]).check_returncode()
+            if verbose:
+                with open(ninja_build_file, "r") as ninja_build:
+                    print("".join(ninja_build.readlines()))
 
-    if run:
-        if verbose:
-            print(f"Running project {program}")
-        returncode = subprocess.run(program).returncode
-        sys.exit(returncode)
+            with open(str(Path(f"{build_dir}/compile_commands.json")), "w") as compile_commands:
+                subprocess.run(["ninja"] + ninja_args + ["-t", "compdb"], stdout=compile_commands).check_returncode()
+
+        program = str(Path(f"{build_dir}/{project}"))
+        if build:
+            subprocess.run(["ninja"] + ninja_args + [program]).check_returncode()
+
+        if run or build_type == "test":
+            if verbose:
+                print(f"Running project {program}")
+            returncode = subprocess.run(program).returncode
+            sys.exit(returncode)
+        else:
+            print(f"Finished building {program}")
+
+    if test:
+        runner("test")
     else:
-        print(f"Finished building {program}")
+        runner("debug" if debug else "optimized")

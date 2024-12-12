@@ -52,19 +52,25 @@ def parse_file_list_with_rules(ninja_db, variables, rules_paths_list, build_key,
         rule = rules_paths_map.get("rule", None)
         files = rules_paths_map["files"]
 
-        for file in files:
-            file = replace_from_variable_dict(file, variables)
-            file_relative_to_root = file.replace(f"{root}/", "")
+        for file_db in files:
+            file_in = replace_from_variable_dict(file_db["in"], variables)
 
             if rule:
-                output = str(Path(f"{build_dir}/{file_relative_to_root}").absolute())
-                output = append_file_ext_if_exists(output, _FILE_EXTS)
+                file_relative_to_root = file_in.replace(f"{root}/", "")
+                if "out" in file_db:
+                    file_out_dir = str(Path(f"{build_dir}/{file_relative_to_root}").parent.absolute())
+                    file_out = str(
+                        Path(f"{file_out_dir}/{replace_from_variable_dict(file_db['out'], variables)}").absolute()
+                    )
+                else:
+                    file_out = str(Path(f"{build_dir}/{file_relative_to_root}").absolute())
+                    file_out = append_file_ext_if_exists(file_out, _FILE_EXTS)
                 if dep_key:
-                    ninja_db[dep_key].append(output)
-                ninja_db[build_key].append({"input": file, "rule": rule, "output": output})
+                    ninja_db[dep_key].append(file_out)
+                ninja_db[build_key].append({"input": file_in, "rule": rule, "output": file_out})
             else:
                 if dep_key:
-                    ninja_db[dep_key].append(file)
+                    ninja_db[dep_key].append(file_in)
 
 
 def main(

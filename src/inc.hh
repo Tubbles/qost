@@ -13,9 +13,8 @@
 #include <variant>
 #include <vector>
 
-// #include "doctest/doctest.h"
-// #include "wren.hpp"
 #include "fmt/format.h"
+#include "fmt/ranges.h"
 #include "magic_enum/magic_enum.hpp"
 #include "wasmer.h"
 
@@ -25,6 +24,10 @@ extern "C" {
 #include "luaconf.h"
 #include "lualib.h"
 }
+
+#ifdef UNIT_TEST
+#include "doctest/doctest.h"
+#endif
 
 #define UNUSED(x) ((void)x)
 #define ARRLEN(x) (sizeof(x) / sizeof(*(x)))

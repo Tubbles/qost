@@ -1,3 +1,6 @@
+#ifdef UNIT_TEST
+#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#endif
 #include "inc.hh"
 
 namespace tss {
@@ -355,7 +358,16 @@ auto wasm_new_populated_imports_vec(
 }
 } // namespace tss
 
+int my_main(int argc, char *argv[]);
+
+#ifndef UNIT_TEST
+// With unit tests we generate a main(), so we need to remove this define
 int main(int argc, char *argv[]) {
+    return my_main(argc, argv);
+}
+#endif
+
+int my_main(int argc, char *argv[]) {
     // using namespace std::string_view_literals;
 
     std::vector<std::string> cmd_args(argv, argv + argc);
@@ -556,4 +568,6 @@ int main(int argc, char *argv[]) {
     wasm_instance_delete(instance);
     wasm_store_delete(store);
     wasm_engine_delete(engine);
+
+    return 0;
 }

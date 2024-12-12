@@ -10,6 +10,54 @@ inline wasm_store_t *g_store = nullptr;
 
 inline wasm_memory_t *g_memory = nullptr;
 
+inline auto str_replace(std::string str, const std::string &from, const std::string &to) -> std::string {
+    size_t start_pos = 0;
+    while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
+        str.replace(start_pos, from.length(), to);
+        start_pos += to.length(); // Handles case where 'to' is a substring of 'from'
+    }
+    return str;
+}
+
+inline auto char_to_printable_ascii(char c) -> char {
+    if (c >= 32 && c <= 126) {
+        return c;
+    } else {
+        return '.';
+    }
+}
+
+// TODO : This is kinda broken
+inline auto memdump_to_str(const void *ptr, size_t len, size_t address_start = 0, size_t width = 16) -> std::string {
+    std::string str{};
+    std::string ascii{};
+    auto byte_ptr = reinterpret_cast<const char *>(ptr);
+
+    size_t start_address = address_start / width * width;
+    size_t last_address  = (start_address + len + width) / width * width;
+    for (size_t address = start_address; address < (last_address + width); address++) {
+        if (address % width == 0) {
+            if (address != start_address) {
+                str += fmt::format("|{}|\n", ascii);
+                ascii = {};
+            }
+            str += fmt::format("{:04x}:", address);
+        }
+        if (address % (width / 2) == 0) {
+            str += " ";
+        }
+        if ((address >= address_start) && (address < (address_start + len))) {
+            str += fmt::format("{:02x} ", *byte_ptr);
+            ascii += char_to_printable_ascii(*byte_ptr);
+            byte_ptr++;
+        } else {
+            str += "   ";
+        }
+    }
+
+    return str;
+}
+
 inline auto wasm_valkind_to_str(wasm_valkind_t valkind) -> std::string {
     switch (valkind) {
     case WASM_I32: {
@@ -81,56 +129,93 @@ inline auto wasm_val_vec_to_str(const wasm_val_vec_t *vals) -> std::string {
     return str;
 }
 
-inline auto wasm_check_pointer(int32_t pointer_value, size_t object_size, size_t mem_size) -> bool {
+inline auto wasm_check_pointer(uint32_t pointer_value, size_t object_size, size_t mem_size) -> bool {
     if (object_size > mem_size) {
         return false;
     }
-    if (pointer_value > static_cast<int32_t>(mem_size - object_size)) {
+    if (pointer_value > static_cast<uint32_t>(mem_size - object_size)) {
         return false;
     }
     return true;
 }
 
-inline auto wasm_wasi_fix_return_type(wasm_valkind_t *kind, bool *printed) {
+inline auto wasm_wasi_fix_return_type(wasm_valkind_t *kind, bool *printed) -> std::string {
+    std::string str{};
+
     if (*kind != WASM_I32) {
         if (!*printed) {
             *printed = true;
-            fmt::print("Correcting return type from {}\n", wasm_valkind_to_str(*kind));
+            str      = fmt::format("Correcting return type from {}\n", wasm_valkind_to_str(*kind));
         }
         *kind = WASM_I32;
     }
+
+    return str;
 }
 
-inline auto wasm_print_func_called(std::string func, const wasm_val_vec_t *args, const wasm_val_vec_t *results) {
-    fmt::print("==> func called {}({}) -> ({})\n", func, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
+inline auto
+wasm_func_called_to_str(std::string func, const wasm_val_vec_t *args, const wasm_val_vec_t *results) -> std::string {
+    return fmt::format("func called {}({}) -> ({})", func, wasm_val_vec_to_str(args), wasm_val_vec_to_str(results));
 }
 
-template <wasm_valkind_t T>
+template <wasm_valkind_t T, typename R = void>
 inline constexpr auto wasm_get_from_val(wasm_val_t val) {
     assert(val.kind == T);
     if constexpr (T == WASM_I32) {
-        return val.of.i32;
+        if constexpr (std::is_same<R, void>()) {
+            return val.of.i32;
+        } else {
+            return static_cast<R>(val.of.i32);
+        }
     }
     if constexpr (T == WASM_I64) {
-        return val.of.i64;
+        if constexpr (std::is_same<R, void>()) {
+            return val.of.i64;
+        } else {
+            return static_cast<R>(val.of.i64);
+        }
     }
     if constexpr (T == WASM_F32) {
-        return val.of.f32;
+        if constexpr (std::is_same<R, void>()) {
+            return val.of.f32;
+        } else {
+            return static_cast<R>(val.of.f32);
+        }
     }
     if constexpr (T == WASM_F64) {
-        return val.of.f64;
+        if constexpr (std::is_same<R, void>()) {
+            return val.of.f64;
+        } else {
+            return static_cast<R>(val.of.f64);
+        }
     }
     if constexpr (T == WASM_EXTERNREF) {
-        return val.of.ref;
+        if constexpr (std::is_same<R, void>()) {
+            return val.of.ref;
+        } else {
+            return static_cast<R>(val.of.ref);
+        }
     }
     if constexpr (T == WASM_FUNCREF) {
-        return val.of.ref;
+        if constexpr (std::is_same<R, void>()) {
+            return val.of.ref;
+        } else {
+            return static_cast<R>(val.of.ref);
+        }
     }
 }
 
 inline auto wasm_not_implemented_trap() -> wasm_trap_t * {
     wasm_message_t message;
     ::wasm_name_new_from_string_nt(&message, "not implemented");
+    wasm_trap_t *trap = ::wasm_trap_new(g_store, &message);
+    ::wasm_name_delete(&message);
+    return trap;
+}
+
+inline auto wasm_out_of_bounds_trap() -> wasm_trap_t * {
+    wasm_message_t message;
+    ::wasm_name_new_from_string_nt(&message, "out of bounds memory access");
     wasm_trap_t *trap = ::wasm_trap_new(g_store, &message);
     ::wasm_name_delete(&message);
     return trap;
@@ -470,77 +555,180 @@ inline auto convert_errno(int error) -> __wasi_errno_t {
     return code;
 }
 
-#define mem_as(mem, as) *reinterpret_cast<as *>(&mem)
+// #define mem_as(mem, as) *reinterpret_cast<as *>(&mem)
 
 inline auto wasi_args_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_args_sizes_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
+}
+
+inline std::vector<const char *> environment({"MYVAR=ASD", ""});
+
+inline auto constexpr get_str_vector_byte_size(std::vector<const char *> vec) -> size_t {
+    size_t size = 0;
+
+    for (auto &elem : vec) {
+        size += std::strlen(elem) + 1;
+    }
+
+    return size;
 }
 
 inline auto wasi_environ_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
+    assert(args->size == 2);
+    assert(results->size == 1);
+    wasm_trap_t *out = nullptr;
+
+    uint32_t environ_ptr     = wasm_get_from_val<WASM_I32, uint32_t>(args->data[0]);
+    uint32_t environ_buf_ptr = wasm_get_from_val<WASM_I32, uint32_t>(args->data[1]);
+    byte_t *mem              = wasm_memory_data(g_memory);
+    size_t mem_size          = wasm_memory_data_size(g_memory);
+
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
-    return wasm_not_implemented_trap();
+
+    auto target_environ_ptr     = reinterpret_cast<__wasi_size_t *>(&mem[environ_ptr]);
+    auto target_environ_buf_ptr = reinterpret_cast<__wasi_size_t *>(&mem[environ_buf_ptr]);
+    std::string memdump{};
+
+    if (!wasm_check_pointer(environ_ptr, sizeof(__wasi_size_t), mem_size)) {
+        // TODO : Which one of these two should we resort to? Its safer to throw for now
+        // results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        out = wasm_out_of_bounds_trap();
+        goto out;
+    }
+
+    if (!wasm_check_pointer(environ_buf_ptr, sizeof(__wasi_size_t), mem_size)) {
+        // TODO : Which one of these two should we resort to? Its safer to throw for now
+        // results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        out = wasm_out_of_bounds_trap();
+        goto out;
+    }
+
+    // TODO THIS IS NOT DONE
+    *target_environ_ptr     = static_cast<__wasi_size_t>(environment.size());
+    *target_environ_buf_ptr = static_cast<__wasi_size_t>(get_str_vector_byte_size(environment));
+    str += fmt::format("setting mem {:#Lx} to {:#Lx}\n", environ_ptr, *target_environ_ptr);
+    memdump =
+        str_replace(memdump_to_str(target_environ_buf_ptr, get_str_vector_byte_size(environment) * 4, environ_buf_ptr),
+                    "\n",
+                    "\n  ");
+    str += fmt::format("setting mem {:#Lx} to \n  {}\n", environ_buf_ptr, memdump);
+
+out:
+    str = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    fmt::print("==> {}", str);
+    return out;
 }
 
 inline auto
 wasi_environ_sizes_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
+    assert(args->size == 2);
+    assert(results->size == 1);
+    wasm_trap_t *out = nullptr;
+
+    uint32_t environ_count_ptr    = wasm_get_from_val<WASM_I32, uint32_t>(args->data[0]);
+    uint32_t environ_buf_size_ptr = wasm_get_from_val<WASM_I32, uint32_t>(args->data[1]);
+    byte_t *mem                   = wasm_memory_data(g_memory);
+    size_t mem_size               = wasm_memory_data_size(g_memory);
+
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
-    return wasm_not_implemented_trap();
+
+    auto target_environ_count_ptr    = reinterpret_cast<__wasi_size_t *>(&mem[environ_count_ptr]);
+    auto target_environ_buf_size_ptr = reinterpret_cast<__wasi_size_t *>(&mem[environ_buf_size_ptr]);
+
+    if (!wasm_check_pointer(environ_count_ptr, sizeof(__wasi_size_t), mem_size)) {
+        // TODO : Which one of these two should we resort to? Its safer to throw for now
+        // results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        out = wasm_out_of_bounds_trap();
+        goto out;
+    }
+
+    if (!wasm_check_pointer(environ_buf_size_ptr, sizeof(__wasi_size_t), mem_size)) {
+        // TODO : Which one of these two should we resort to? Its safer to throw for now
+        // results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        out = wasm_out_of_bounds_trap();
+        goto out;
+    }
+
+    *target_environ_count_ptr    = static_cast<__wasi_size_t>(environment.size());
+    *target_environ_buf_size_ptr = static_cast<__wasi_size_t>(get_str_vector_byte_size(environment));
+    str += fmt::format("setting mem {:#Lx} to {:#Lx}\n", environ_count_ptr, *target_environ_count_ptr);
+    str += fmt::format("setting mem {:#Lx} to {:#Lx}\n", environ_buf_size_ptr, *target_environ_buf_size_ptr);
+
+out:
+    str = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    fmt::print("==> {}", str);
+    return out;
 }
 
 inline auto wasi_clock_res_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_clock_time_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     assert(args->size == 3);
     assert(results->size == 1);
-    __wasi_clockid_t clock_id = static_cast<__wasi_clockid_t>(wasm_get_from_val<WASM_I32>(args->data[0]));
+    wasm_trap_t *out = nullptr;
+
+    __wasi_clockid_t clock_id = wasm_get_from_val<WASM_I32, __wasi_clockid_t>(args->data[0]);
     int64_t precision         = wasm_get_from_val<WASM_I64>(args->data[1]);
-    int32_t time_ptr          = wasm_get_from_val<WASM_I32>(args->data[2]);
+    uint32_t time_ptr         = wasm_get_from_val<WASM_I32, uint32_t>(args->data[2]);
+    byte_t *mem               = wasm_memory_data(g_memory);
+    size_t mem_size           = wasm_memory_data_size(g_memory);
     UNUSED(precision);
-    byte_t *mem     = wasm_memory_data(g_memory);
-    size_t mem_size = wasm_memory_data_size(g_memory);
 
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
 
     auto target = reinterpret_cast<__wasi_timestamp_t *>(&mem[time_ptr]);
 
     if (!wasm_check_pointer(time_ptr, sizeof(__wasi_timestamp_t), mem_size)) {
-        results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        // TODO : Which one of these two should we resort to? Its safer to throw for now
+        // results->data[0].of.i32 = std::to_underlying(Errno::e_2big);
+        out = wasm_out_of_bounds_trap();
         goto out;
     }
 
     if (!magic_enum::enum_contains<ClockID>(clock_id)) {
+        // TODO : Check if all clocks are supported by the host, and return e_notsup if not
         results->data[0].of.i32 = std::to_underlying(Errno::e_inval);
         goto out;
     }
@@ -552,341 +740,449 @@ inline auto wasi_clock_time_get_stub(void *env, const wasm_val_vec_t *args, wasm
     }
 
     *target = timespec_to_nanoseconds(&ts);
-    fmt::print("setting mem {:#Lx} to {:#Lx}\n", time_ptr, *target);
+    str += fmt::format("setting mem {:#Lx} to {:#Lx}\n", time_ptr, *target);
 
 out:
-    wasm_print_func_called(__func__, args, results);
-    return nullptr;
-    // return wasm_not_implemented_trap();
+    str = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    fmt::print("==> {}", str);
+    return out;
 }
 
 inline auto wasi_fd_advise_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_close_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_datasync_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_fdstat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_fd_fdstat_set_flags_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_filestat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_fd_filestat_set_size_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_fd_filestat_set_times_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_pread_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_prestat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_fd_prestat_dir_name_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_pwrite_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_read_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_readdir_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_seek_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_sync_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_tell_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_fd_write_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_path_create_directory_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_path_filestat_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_path_filestat_set_times_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_path_link_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_path_open_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_path_readlink_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_path_remove_directory_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_path_rename_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_path_symlink_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto
 wasi_path_unlink_file_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_poll_oneoff_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_proc_exit_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
-    wasm_print_func_called(__func__, args, results);
+    std::string str{};
+    str = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_sched_yield_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_random_get_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_sock_accept_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_sock_recv_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_sock_send_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
 inline auto wasi_sock_shutdown_stub(void *env, const wasm_val_vec_t *args, wasm_val_vec_t *results) -> wasm_trap_t * {
     UNUSED(env);
+    std::string str{};
     static bool printed = false;
-    wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
+    str += wasm_wasi_fix_return_type(&results->data[0].kind, &printed);
     results->data[0].of.i32 = std::to_underlying(Errno::e_success);
-    wasm_print_func_called(__func__, args, results);
+    str                     = wasm_func_called_to_str(__func__, args, results) + "\n" + str;
+    str += "not implemented\n";
+    fmt::print("==> {}", str);
     return wasm_not_implemented_trap();
 }
 
@@ -1720,3 +2016,12 @@ __wasi_errno_t __wasi_sock_shutdown(
 /** @} */
 
 // clang-format on
+
+#ifdef UNIT_TEST
+TEST_CASE("memdump_to_str") {
+    const char mem[]        = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 0x45, 14, 15, 16, 0x30, 0x45, 19, 20};
+    std::string memdump_str = tss::memdump_to_str((&mem[1]), 17, 1234);
+    INFO("\n", memdump_str);
+    REQUIRE(memdump_str.c_str() == doctest::Contains("asd"));
+}
+#endif

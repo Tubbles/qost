@@ -32,7 +32,6 @@ common_compile_flags = [
     "-D_FORTIFY_SOURCE=2",
     "-D_GLIBCXX_ASSERTIONS",
 
-    "-I {doctest}",
     "-I {fmt}/include",
     "-I {lua}",
     "-I {magic_enum}/include",
@@ -112,6 +111,43 @@ ldflags = [
     #
 ]
 
+[profile.test.variable]
+common_unit_test_flags = [
+    "-I {doctest}",
+    "-DUNIT_TEST",
+    #
+]
+cflags = [
+    "-Og",
+    "-g",
+    "-fsanitize=address",
+    "-fsanitize=undefined",
+    "-DDEBUG",
+    "{common_c_flags}",
+    "{common_unit_test_flags}",
+    #
+]
+cxxflags = [
+    "-Og",
+    "-g",
+    "-fsanitize=address",
+    "-fsanitize=undefined",
+    "-DDEBUG",
+    "{common_cxx_flags}",
+    "{common_unit_test_flags}",
+    #
+]
+ldflags = [
+    "-Og",
+    "-g",
+    "-fsanitize=address",
+    "-fsanitize=undefined",
+    "-DDEBUG",
+    "{common_ld_flags}",
+    "{common_unit_test_flags}",
+    #
+]
+
 [rule.cc]
 command = "g++ -MD -MF {out}.d {cflags} -c -o {out} {in}"
 depfile = "{out}.d"
@@ -125,19 +161,32 @@ deps = "gcc"
 [rule.ld]
 command = "g++ -o {out} {in} {ldflags}" # Flag ordering here is important for ld
 
+[rule.cctest]
+command = "g++ -MD -MF {out}.d {cflags} -I {doctest} -DUNIT_TEST -c -o {out} {in}"
+depfile = "{out}.d"
+deps = "gcc"
+
+[rule.cxxtest]
+command = "g++ -MD -MF {out}.d {cxxflags} -I {doctest} -DUNIT_TEST -c -o {out} {in}"
+depfile = "{out}.d"
+deps = "gcc"
+
+[rule.ldtest]
+command = "g++ -I {doctest} -DUNIT_TEST -o {out} {in} {ldflags}" # Flag ordering here is important for ld
+
 [binary."{build_dir}/quest-on-saer-tor"]
 rule = "ld"
 dependencies = [
     { rule = "cxx", files = [
-        "{src}/main.cc",
+        { in = "{src}/main.cc" },
         #
     ] },
 ]
 implicit_dependencies = [
     { files = [
-        "{lua}/liblua.a",
-        "{fmt}/build/libfmt.a",
-        "{wasmer}/lib/libwasmer.a",
+        { in = "{lua}/liblua.a" },
+        { in = "{fmt}/build/libfmt.a" },
+        { in = "{wasmer}/lib/libwasmer.a" },
         #
     ] },
 ]
